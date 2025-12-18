@@ -1,0 +1,794 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Captain Luke’s Space Odyssey</title>
+  <style>
+    :root { color-scheme: dark; }
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background:#070a14;
+      color:#e8ecff;
+      display:grid;
+      place-items:center;
+      min-height:100vh;
+      overflow:hidden;
+    }
+    .wrap{ width:min(900px,96vw); }
+    .topbar{
+      display:flex; gap:12px; align-items:center; justify-content:space-between;
+      margin: 10px 0 8px;
+    }
+    .stats{ display:flex; gap:14px; flex-wrap:wrap; }
+    .pill{
+      padding:8px 10px;
+      border-radius:999px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.12);
+      font-weight: 750;
+      letter-spacing:.2px;
+    }
+    .btn{
+      cursor:pointer;
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(255,255,255,.07);
+      color:#e8ecff;
+      padding: 9px 12px;
+      border-radius: 12px;
+      font-weight: 800;
+    }
+    .btn:active{ transform: translateY(1px); }
+
+    canvas{
+      width:100%;
+      height:auto;
+      aspect-ratio:16/9;
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,.12);
+      background: radial-gradient(1200px 700px at 25% 25%, rgba(90,180,255,.10), transparent 60%),
+                  radial-gradient(900px 600px at 78% 32%, rgba(255,90,190,.07), transparent 58%),
+                  linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+      box-shadow: 0 18px 60px rgba(0,0,0,.55);
+      display:block;
+    }
+
+    .hint{ opacity:.82; margin: 8px 2px 0; font-size:14px; }
+
+    .overlay{
+      position:absolute; inset:0;
+      display:grid; place-items:center;
+      pointer-events:none;
+    }
+    .card{
+      pointer-events:auto;
+      width:min(560px, 92vw);
+      background: rgba(8,12,24,.74);
+      border:1px solid rgba(255,255,255,.16);
+      border-radius:18px;
+      padding: 18px 16px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 22px 80px rgba(0,0,0,.55);
+      text-align:center;
+    }
+    .title{ font-size:22px; font-weight: 950; margin: 2px 0 10px; }
+    .sub{ opacity:.9; margin:0 0 14px; line-height:1.45; }
+    .row{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+
+    /* Mobile controls */
+    .touch{
+      margin-top:10px;
+      display:none;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap:10px;
+      user-select:none;
+      -webkit-user-select:none;
+    }
+    .touch .btn{ padding: 14px 12px; }
+    @media (pointer: coarse){
+      .touch{ display:grid; }
+      .hint{ display:none; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="stats">
+        <div class="pill" id="scorePill">Score: 0</div>
+        <div class="pill" id="levelPill">Level: 1</div>
+        <div class="pill" id="livesPill">Lives: 3</div>
+        <div class="pill" id="bestPill">Best: 0</div>
+      </div>
+      <div class="row">
+        <button class="btn" id="pauseBtn">Pause</button>
+        <button class="btn" id="restartBtn">Restart</button>
+      </div>
+    </div>
+
+    <div style="position:relative;">
+      <canvas id="game" width="960" height="540"></canvas>
+
+      <div class="overlay" id="overlay" style="display:grid;">
+        <div class="card">
+          <div class="title" id="overlayTitle">Captain Luke’s Space Odyssey</div>
+          <p class="sub" id="overlayText">
+            Navigate the HUD void.<br/>
+            Collect <b>⭐</b> energy • Avoid <b>☄</b> hazards.<br/><br/>
+            Move: <b>WASD</b>/<b>Arrows</b> • Boost: <b>Space</b> • Pause: <b>P</b>
+          </p>
+          <div class="row">
+            <button class="btn" id="overlayPrimary">Start Mission</button>
+            <button class="btn" id="overlaySecondary">How to Play</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hint">
+      Move: <b>WASD</b> / <b>Arrow keys</b> • Boost: <b>Space</b> (cooldown ring) • Pause: <b>P</b> • Collect ⭐, avoid ☄
+    </div>
+
+    <div class="touch" aria-label="Touch controls">
+      <button class="btn" id="leftBtn">⬅️ Left</button>
+      <button class="btn" id="upBtn">⬆️ Up</button>
+      <button class="btn" id="rightBtn">➡️ Right</button>
+      <button class="btn" id="downBtn" style="grid-column: 2;">⬇️ Down</button>
+      <button class="btn" id="dashBtn" style="grid-column: 3;">⚡ Boost</button>
+    </div>
+  </div>
+
+<script>
+(() => {
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+
+  const scorePill = document.getElementById('scorePill');
+  const levelPill = document.getElementById('levelPill');
+  const livesPill = document.getElementById('livesPill');
+  const bestPill  = document.getElementById('bestPill');
+
+  const pauseBtn   = document.getElementById('pauseBtn');
+  const restartBtn = document.getElementById('restartBtn');
+
+  const overlay = document.getElementById('overlay');
+  const overlayTitle = document.getElementById('overlayTitle');
+  const overlayText  = document.getElementById('overlayText');
+  const overlayPrimary = document.getElementById('overlayPrimary');
+  const overlaySecondary = document.getElementById('overlaySecondary');
+
+  const bestKey = "captain_luke_space_odyssey_best_v1";
+  let best = Number(localStorage.getItem(bestKey) || 0);
+
+  const W = () => canvas.width;
+  const H = () => canvas.height;
+
+  const rand  = (a,b) => a + Math.random()*(b-a);
+  const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+
+  // Brand colours (HUD)
+  const C_CYAN    = "rgba(120, 210, 255, 0.95)";
+  const C_CYAN_G  = "rgba(120, 210, 255, 0.55)";
+  const C_MAG     = "rgba(255, 95, 200, 0.92)";
+  const C_MAG_G   = "rgba(255, 95, 200, 0.55)";
+  const C_STAR    = "rgba(255, 235, 160, 0.96)";
+
+  const keys = new Set();
+  window.addEventListener('keydown', (e) => {
+    const k = e.key.toLowerCase();
+    keys.add(k);
+    if (k === 'p') togglePause();
+    if (k === 'r') hardRestart();
+    if (['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k)) e.preventDefault();
+  }, { passive:false });
+  window.addEventListener('keyup', (e) => keys.delete(e.key.toLowerCase()));
+
+  // Touch
+  const hold = (btn, onDown, onUp) => {
+    const down = (e) => { e.preventDefault(); onDown(); };
+    const up   = (e) => { e.preventDefault(); onUp(); };
+    btn.addEventListener('pointerdown', down);
+    btn.addEventListener('pointerup', up);
+    btn.addEventListener('pointercancel', up);
+    btn.addEventListener('pointerleave', up);
+  };
+
+  let touchDir = {x:0,y:0};
+  const setDir = (x,y) => { touchDir.x = x; touchDir.y = y; };
+
+  const leftBtn  = document.getElementById('leftBtn');
+  const rightBtn = document.getElementById('rightBtn');
+  const upBtn    = document.getElementById('upBtn');
+  const downBtn  = document.getElementById('downBtn');
+  const dashBtn  = document.getElementById('dashBtn');
+
+  hold(leftBtn,  ()=>setDir(-1,touchDir.y), ()=>setDir(0,touchDir.y));
+  hold(rightBtn, ()=>setDir( 1,touchDir.y), ()=>setDir(0,touchDir.y));
+  hold(upBtn,    ()=>setDir(touchDir.x,-1), ()=>setDir(touchDir.x,0));
+  hold(downBtn,  ()=>setDir(touchDir.x, 1), ()=>setDir(touchDir.x,0));
+
+  let dashPressed = false;
+  dashBtn.addEventListener('pointerdown', (e)=>{ e.preventDefault(); dashPressed = true; });
+  dashBtn.addEventListener('pointerup',   (e)=>{ e.preventDefault(); dashPressed = false; });
+  dashBtn.addEventListener('pointercancel',(e)=>{ e.preventDefault(); dashPressed = false; });
+
+  // Game state
+  let running = false;
+  let gameOver = false;
+  let score = 0;
+  let level = 1;
+  let lives = 3;
+
+  // FX state (kept disciplined)
+  let shakeT = 0;
+  let levelFlashT = 0;
+  let hudPulseT = 0;
+
+  const player = {
+    x: W()/2, y: H()*0.75,
+    r: 16,
+    speed: 240,
+    dashSpeed: 520,
+    dashCooldown: 0,
+    invuln: 0,
+    flame: 0
+  };
+
+  const stars = [];
+  const enemies = [];
+  const particles = [];
+
+  // Minimal “HUD space” dust: sparse + subtle
+  const dust = Array.from({length: 70}, () => ({
+    x: rand(0, W()), y: rand(0, H()),
+    s: rand(0.8, 2.2),
+    a: rand(0.18, 0.55),
+    v: rand(6, 22),
+  }));
+
+  function reset() {
+    running = false;
+    gameOver = false;
+
+    score = 0;
+    level = 1;
+    lives = 3;
+
+    player.x = W()/2; player.y = H()*0.75;
+    player.dashCooldown = 0;
+    player.invuln = 0;
+    player.flame = 0;
+
+    shakeT = 0;
+    levelFlashT = 0;
+    hudPulseT = 0;
+
+    stars.length = 0; enemies.length = 0; particles.length = 0;
+
+    spawnStar();
+    for (let i=0;i<3;i++) spawnEnemy();
+
+    updateUI();
+  }
+
+  function hardRestart() {
+    reset();
+    showOverlay("Captain Luke’s Space Odyssey",
+      "Collect <b>⭐</b> energy • Avoid <b>☄</b> hazards.<br/><br/>Move: <b>WASD</b>/<b>Arrows</b> • Boost: <b>Space</b> • Pause: <b>P</b>",
+      "Start Mission",
+      "How to Play"
+    );
+  }
+
+  function updateUI() {
+    scorePill.textContent = `Score: ${score}`;
+    levelPill.textContent = `Level: ${level}`;
+    livesPill.textContent = `Lives: ${lives}`;
+    bestPill.textContent  = `Best: ${best}`;
+  }
+
+  function showOverlay(title, html, primaryText="Resume", secondaryText="Restart") {
+    overlayTitle.textContent = title;
+    overlayText.innerHTML = html;
+    overlayPrimary.textContent = primaryText;
+    overlaySecondary.textContent = secondaryText;
+    overlay.style.display = 'grid';
+  }
+  function hideOverlay() {
+    overlay.style.display = 'none';
+  }
+
+  function startGame() {
+    hideOverlay();
+    running = true;
+    gameOver = false;
+  }
+
+  function togglePause() {
+    if (gameOver) return;
+    running = !running;
+    if (!running) showOverlay("Paused", "Press <b>P</b> to resume.", "Resume", "Restart");
+    else hideOverlay();
+  }
+
+  pauseBtn.onclick = togglePause;
+  restartBtn.onclick = hardRestart;
+
+  overlayPrimary.onclick = () => {
+    if (gameOver) { hardRestart(); return; }
+    if (!running) startGame();
+    else { running = true; hideOverlay(); }
+  };
+  overlaySecondary.onclick = () => {
+    if (overlaySecondary.textContent.toLowerCase().includes("how")) {
+      showOverlay(
+        "How to Play",
+        "You are the ship.<br/><br/>• Collect <b>⭐</b> to score<br/>• Avoid <b>☄</b> hazards<br/>• <b>Space</b> = Boost (cooldown ring)<br/><br/>Tip: boost through tight gaps.",
+        "Start Mission",
+        "Back"
+      );
+      overlaySecondary.textContent = "Back";
+      return;
+    }
+    hardRestart();
+  };
+
+  function spawnStar() {
+    stars.push({
+      x: rand(40, W()-40),
+      y: rand(40, H()-40),
+      r: 10,
+      spin: rand(0, Math.PI*2),
+      pulse: rand(0, Math.PI*2)
+    });
+  }
+
+  function spawnEnemy() {
+    enemies.push({
+      x: rand(30, W()-30),
+      y: rand(-320, -40),
+      r: rand(13, 18),
+      vy: rand(120, 190) + level*18,
+      vx: rand(-55, 55),
+      wobble: rand(0, Math.PI*2),
+      heat: rand(0.65, 1.0) // used for glow intensity
+    });
+  }
+
+  function burst(x,y, n=12, c="rgba(255,255,255,0.9)") {
+    for (let i=0;i<n;i++){
+      const a = rand(0, Math.PI*2);
+      const s = rand(60, 220);
+      particles.push({
+        x,y,
+        vx: Math.cos(a)*s,
+        vy: Math.sin(a)*s,
+        life: rand(0.22, 0.55),
+        c
+      });
+    }
+  }
+
+  function circleHit(a, b) {
+    const dx = a.x - b.x, dy = a.y - b.y;
+    const rr = (a.r + b.r);
+    return dx*dx + dy*dy <= rr*rr;
+  }
+
+  let last = performance.now();
+  function loop(now) {
+    const dt = Math.min(0.033, (now - last) / 1000);
+    last = now;
+
+    if (running && !gameOver) update(dt);
+    render(now, dt);
+
+    requestAnimationFrame(loop);
+  }
+
+  function update(dt) {
+    // Level scaling (clean + predictable)
+    const newLevel = 1 + Math.floor(score / 10);
+    if (newLevel !== level) {
+      level = newLevel;
+      levelFlashT = 0.28;
+      hudPulseT = 0.18;
+      if (enemies.length < 12) spawnEnemy();
+      updateUI();
+    }
+
+    // Movement input
+    let ix = 0, iy = 0;
+    if (keys.has('arrowleft') || keys.has('a')) ix -= 1;
+    if (keys.has('arrowright') || keys.has('d')) ix += 1;
+    if (keys.has('arrowup') || keys.has('w')) iy -= 1;
+    if (keys.has('arrowdown') || keys.has('s')) iy += 1;
+
+    ix += touchDir.x; iy += touchDir.y;
+    ix = clamp(ix, -1, 1); iy = clamp(iy, -1, 1);
+
+    const mag = Math.hypot(ix, iy) || 1;
+    const nx = ix / mag, ny = iy / mag;
+
+    const wantDash = dashPressed || keys.has(' ');
+    let speed = player.speed;
+
+    if (player.dashCooldown > 0) player.dashCooldown -= dt;
+    if (player.invuln > 0) player.invuln -= dt;
+    if (shakeT > 0) shakeT -= dt;
+    if (levelFlashT > 0) levelFlashT -= dt;
+    if (hudPulseT > 0) hudPulseT -= dt;
+
+    // “Clean boost”: speed + short invuln + controlled FX
+    if (wantDash && player.dashCooldown <= 0 && (ix || iy)) {
+      speed = player.dashSpeed;
+      player.dashCooldown = 0.9;
+      player.invuln = Math.max(player.invuln, 0.16);
+      player.flame = 1.0;
+      burst(player.x, player.y, 10, C_CYAN_G);
+    }
+
+    // Flame decay
+    player.flame = Math.max(0, player.flame - dt*2.4);
+
+    player.x += nx * speed * dt;
+    player.y += ny * speed * dt;
+
+    player.x = clamp(player.x, player.r, W()-player.r);
+    player.y = clamp(player.y, player.r, H()-player.r);
+
+    // Dust drift (subtle)
+    for (const d of dust) {
+      d.y += d.v * dt;
+      if (d.y > H()+10) { d.y = -10; d.x = rand(0, W()); }
+    }
+
+    // Stars
+    for (const s of stars) { s.spin += dt * 3; s.pulse += dt * 2.2; }
+
+    // Enemies (comet/hazard orbs)
+    for (const e of enemies) {
+      e.wobble += dt * 2.0;
+      e.y += e.vy * dt;
+      e.x += (e.vx + Math.sin(e.wobble) * 36) * dt;
+
+      if (e.x < e.r) { e.x = e.r; e.vx *= -1; }
+      if (e.x > W()-e.r) { e.x = W()-e.r; e.vx *= -1; }
+
+      if (e.y > H() + 90) {
+        e.y = rand(-280, -40);
+        e.x = rand(30, W()-30);
+        e.vy = rand(120, 190) + level*18;
+        e.heat = rand(0.65, 1.0);
+      }
+    }
+
+    // Particles
+    for (let i=particles.length-1; i>=0; i--) {
+      const p = particles[i];
+      p.life -= dt;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.vx *= Math.pow(0.05, dt);
+      p.vy *= Math.pow(0.05, dt);
+      if (p.life <= 0) particles.splice(i,1);
+    }
+
+    // Collect star
+    for (let i=stars.length-1; i>=0; i--) {
+      const s = stars[i];
+      if (circleHit(player, s)) {
+        stars.splice(i,1);
+        score += 1;
+        burst(s.x, s.y, 14, "rgba(255,235,160,0.85)");
+        spawnStar();
+        updateUI();
+      }
+    }
+
+    // Hit enemy
+    if (player.invuln <= 0) {
+      for (const e of enemies) {
+        if (circleHit(player, e)) {
+          lives -= 1;
+          player.invuln = 1.0;
+          shakeT = 0.22;
+          burst(player.x, player.y, 22, C_MAG_G);
+          updateUI();
+
+          if (lives <= 0) {
+            gameOver = true;
+            running = false;
+            if (score > best) {
+              best = score;
+              localStorage.setItem(bestKey, String(best));
+            }
+            updateUI();
+            showOverlay(
+              "Mission Failed",
+              `Final score: <b>${score}</b><br/>Press <b>R</b> to restart.`,
+              "Restart",
+              "Restart"
+            );
+          }
+          break;
+        }
+      }
+    }
+  }
+
+  // ----- DRAWING (Minimal HUD) -----
+
+  function drawBackground(now) {
+    // Clean HUD glass: very subtle
+    // vignette
+    ctx.save();
+    const grad = ctx.createRadialGradient(W()*0.5, H()*0.45, 120, W()*0.5, H()*0.5, W()*0.9);
+    grad.addColorStop(0, "rgba(20,28,55,0.10)");
+    grad.addColorStop(1, "rgba(0,0,0,0.32)");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0,0,W(),H());
+
+    // sparse dust points
+    for (const d of dust) {
+      ctx.globalAlpha = d.a;
+      ctx.fillStyle = "rgba(255,255,255,0.8)";
+      ctx.fillRect(d.x, d.y, d.s, d.s);
+    }
+    ctx.globalAlpha = 1;
+
+    // faint scanlines (very light)
+    ctx.globalAlpha = 0.06;
+    ctx.fillStyle = "rgba(255,255,255,1)";
+    for (let y=0; y<H(); y+=3) ctx.fillRect(0, y, W(), 1);
+    ctx.globalAlpha = 1;
+
+    // faint HUD grid (large spacing, barely there)
+    ctx.globalAlpha = 0.08;
+    ctx.strokeStyle = "rgba(120,210,255,0.35)";
+    ctx.lineWidth = 1;
+    for (let x=0; x<=W(); x+=120) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H()); ctx.stroke(); }
+    for (let y=0; y<=H(); y+=120) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W(),y); ctx.stroke(); }
+    ctx.globalAlpha = 1;
+
+    // level-up pulse tint
+    if (hudPulseT > 0) {
+      ctx.globalAlpha = hudPulseT / 0.18 * 0.10;
+      ctx.fillStyle = "rgba(255,95,200,1)";
+      ctx.fillRect(0,0,W(),H());
+      ctx.globalAlpha = 1;
+    }
+
+    ctx.restore();
+  }
+
+  function drawStar(x,y,r,spin,pulse) {
+    ctx.save();
+    ctx.translate(x,y);
+    ctx.rotate(spin);
+
+    const breathe = 1 + Math.sin(pulse)*0.06;
+
+    ctx.beginPath();
+    const spikes = 5;
+    const outer = r*breathe, inner = r*0.48;
+    for (let i=0;i<spikes*2;i++){
+      const a = (i * Math.PI) / spikes;
+      const rr = (i%2===0) ? outer : inner;
+      ctx.lineTo(Math.cos(a)*rr, Math.sin(a)*rr);
+    }
+    ctx.closePath();
+
+    ctx.fillStyle = C_STAR;
+    ctx.shadowColor = "rgba(255,235,160,0.55)";
+    ctx.shadowBlur = 18;
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  function drawHazard(e) {
+    // Clean “comet/hazard orb”: core + glow + subtle tail in travel direction
+    const tail = clamp((e.vy - 120) / 200, 0, 1);
+
+    // tail
+    ctx.save();
+    ctx.globalAlpha = 0.75;
+    const tailLen = 26 + tail*34;
+    const tailW = e.r * 1.35;
+
+    const g = ctx.createLinearGradient(e.x, e.y-e.r, e.x, e.y + tailLen);
+    g.addColorStop(0, `rgba(255,95,200,${0.22*e.heat})`);
+    g.addColorStop(1, `rgba(255,95,200,0)`);
+    ctx.fillStyle = g;
+
+    ctx.beginPath();
+    ctx.moveTo(e.x - tailW*0.55, e.y + e.r*0.25);
+    ctx.lineTo(e.x + tailW*0.55, e.y + e.r*0.25);
+    ctx.lineTo(e.x, e.y + tailLen);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    // glow ring
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(e.x, e.y, e.r+6, 0, Math.PI*2);
+    ctx.strokeStyle = `rgba(255,95,200,${0.20*e.heat})`;
+    ctx.lineWidth = 3;
+    ctx.shadowColor = `rgba(255,95,200,${0.55*e.heat})`;
+    ctx.shadowBlur = 20;
+    ctx.stroke();
+    ctx.restore();
+
+    // core orb (dark core with hot rim)
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(e.x, e.y, e.r, 0, Math.PI*2);
+    ctx.fillStyle = "rgba(40,18,30,0.95)";
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(e.x, e.y, e.r, 0, Math.PI*2);
+    ctx.strokeStyle = `rgba(255,95,200,${0.55*e.heat})`;
+    ctx.lineWidth = 2;
+    ctx.shadowColor = `rgba(255,95,200,${0.85*e.heat})`;
+    ctx.shadowBlur = 26;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawShip(now) {
+    // Minimal “ship” silhouette: teardrop capsule + magenta accent + engine aura
+    const inv = player.invuln > 0 ? (Math.floor(now/90) % 2 ? 0.35 : 1) : 1;
+
+    // engine aura (animated)
+    const moving = (keys.has('a')||keys.has('d')||keys.has('w')||keys.has('s')||
+                    keys.has('arrowleft')||keys.has('arrowright')||keys.has('arrowup')||keys.has('arrowdown')||
+                    touchDir.x||touchDir.y) ? 1 : 0;
+
+    const flame = (0.20 + moving*0.25 + player.flame*0.65);
+    const flameLen = 10 + flame*18 + Math.sin(now/70)*2;
+
+    // aura
+    ctx.save();
+    ctx.globalAlpha = inv;
+    ctx.translate(player.x, player.y);
+
+    // soft outer glow
+    ctx.beginPath();
+    ctx.ellipse(0, 0, player.r+10, player.r+12, 0, 0, Math.PI*2);
+    ctx.fillStyle = "rgba(120,210,255,0.10)";
+    ctx.fill();
+
+    // engine “streak” (boost)
+    if (player.flame > 0.1) {
+      const g = ctx.createLinearGradient(0, player.r*0.7, 0, player.r + flameLen);
+      g.addColorStop(0, "rgba(120,210,255,0.55)");
+      g.addColorStop(1, "rgba(120,210,255,0)");
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.moveTo(-7, player.r*0.6);
+      ctx.lineTo( 7, player.r*0.6);
+      ctx.lineTo( 0, player.r + flameLen);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // ship body (teardrop)
+    ctx.beginPath();
+    ctx.moveTo(0, -20);
+    ctx.bezierCurveTo(12, -16, 14, 6, 0, 18);
+    ctx.bezierCurveTo(-14, 6, -12, -16, 0, -20);
+    ctx.closePath();
+
+    ctx.fillStyle = C_CYAN;
+    ctx.shadowColor = C_CYAN_G;
+    ctx.shadowBlur = 22;
+    ctx.fill();
+
+    // cockpit (small clean highlight)
+    ctx.beginPath();
+    ctx.ellipse(0, -6, 4.2, 6.2, 0, 0, Math.PI*2);
+    ctx.fillStyle = "rgba(235, 252, 255, 0.92)";
+    ctx.shadowColor = "rgba(235, 252, 255, 0.35)";
+    ctx.shadowBlur = 10;
+    ctx.fill();
+
+    // magenta accent line (thin, minimal)
+    ctx.shadowBlur = 0;
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = "rgba(255,95,200,0.65)";
+    ctx.beginPath();
+    ctx.moveTo(0, -14);
+    ctx.quadraticCurveTo(6, 0, 0, 14);
+    ctx.stroke();
+
+    // dash cooldown ring (kept: clean info)
+    const t = clamp(player.dashCooldown / 0.9, 0, 1);
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = "rgba(255,255,255,0.62)";
+    ctx.beginPath();
+    ctx.arc(0, 0, player.r + 12, -Math.PI/2, -Math.PI/2 + (1-t)*Math.PI*2);
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  function render(now, dt) {
+    ctx.clearRect(0,0,W(),H());
+
+    // Controlled screen shake
+    if (shakeT > 0) {
+      const s = (shakeT / 0.22);
+      ctx.save();
+      ctx.translate(rand(-10,10)*s, rand(-10,10)*s);
+    }
+
+    drawBackground(now);
+
+    // Particles (kept small & clean)
+    for (const p of particles) {
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, p.life) / 0.55;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 2.2, 0, Math.PI*2);
+      ctx.fillStyle = p.c || "rgba(255,255,255,0.9)";
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // Stars
+    for (const s of stars) drawStar(s.x, s.y, s.r, s.spin, s.pulse);
+
+    // Hazards
+    for (const e of enemies) drawHazard(e);
+
+    // Player ship
+    drawShip(now);
+
+    // Level flash (single clean flash)
+    if (levelFlashT > 0) {
+      ctx.save();
+      const a = (levelFlashT / 0.28) * 0.22;
+      ctx.fillStyle = `rgba(255,255,255,${a})`;
+      ctx.fillRect(0,0,W(),H());
+      ctx.restore();
+    }
+
+    if (shakeT > 0) ctx.restore();
+
+    // First-run hint inside canvas (kept minimal)
+    if (score === 0 && !gameOver && !running) {
+      ctx.save();
+      ctx.fillStyle = "rgba(255,255,255,0.82)";
+      ctx.font = "750 18px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+      ctx.textAlign = "center";
+      ctx.fillText("Press Start Mission • Boost with Space • Keep it clean, Captain.", W()/2, 46);
+      ctx.restore();
+    }
+  }
+
+  // Boot
+  bestPill.textContent = `Best: ${best}`;
+  reset();
+  showOverlay(
+    "Captain Luke’s Space Odyssey",
+    "Navigate the HUD void.<br/>Collect <b>⭐</b> energy • Avoid <b>☄</b> hazards.<br/><br/>Move: <b>WASD</b>/<b>Arrows</b> • Boost: <b>Space</b> • Pause: <b>P</b>",
+    "Start Mission",
+    "How to Play"
+  );
+
+  // Start button behavior for first screen
+  overlayPrimary.onclick = () => {
+    if (overlayPrimary.textContent.toLowerCase().includes("start")) startGame();
+    else { running = true; hideOverlay(); }
+  };
+
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
