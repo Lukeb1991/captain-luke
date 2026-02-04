@@ -1,1127 +1,1704 @@
+
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Captain Luke’s Space Odyssey</title>
-  <style>
-    :root { color-scheme: dark; }
-    body{
-      margin:0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
-      background:#070a14;
-      color:#e8ecff;
-      display:grid;
-      place-items:center;
-      min-height:100vh;
-      overflow:hidden;
-    }
-    .wrap{ width:min(900px,96vw); }
-    .topbar{
-      display:flex; gap:12px; align-items:center; justify-content:space-between;
-      margin: 10px 0 8px;
-    }
-    .stats{ display:flex; gap:14px; flex-wrap:wrap; }
-    .pill{
-      padding:8px 10px;
-      border-radius:999px;
-      background: rgba(255,255,255,.06);
-      border: 1px solid rgba(255,255,255,.12);
-      font-weight: 750;
-      letter-spacing:.2px;
-    }
-    .btn{
-      cursor:pointer;
-      border: 1px solid rgba(255,255,255,.18);
-      background: rgba(255,255,255,.07);
-      color:#e8ecff;
-      padding: 9px 12px;
-      border-radius: 12px;
-      font-weight: 800;
-    }
-    .btn:active{ transform: translateY(1px); }
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Captain Luke’s Space Odyssey</title>
+<style>
+:root { color-scheme: dark; }
+body{
+margin:0;
+font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+background:#070a14;
+color:#e8ecff;
+display:grid;
+place-items:center;
+min-height:100vh;
+overflow:hidden;
+}
+.wrap{ width:min(900px,96vw); }
+.topbar{
+display:flex; gap:12px; align-items:center; justify-content:space-between;
+margin: 10px 0 8px;
+transition: transform 0.35s ease-out;
+}
+.stats{ display:flex; gap:14px; flex-wrap:wrap; }
+.pill{
+padding:8px 10px;
+border-radius:999px;
+background: rgba(255,255,255,.06);
+border: 1px solid rgba(255,255,255,.12);
+font-weight: 750;
+letter-spacing:.2px;
+}
+.btn{
+cursor:pointer;
+border: 1px solid rgba(255,255,255,.18);
+background: rgba(255,255,255,.07);
+color:#e8ecff;
+padding: 9px 12px;
+border-radius: 12px;
+font-weight: 800;
+}
+.btn:active{ transform: translateY(1px); }
 
-    canvas{
-      width:100%;
-      height:auto;
-      aspect-ratio:16/9;
-      border-radius:18px;
-      border:1px solid rgba(255,255,255,.12);
-      background: radial-gradient(1200px 700px at 25% 25%, rgba(90,180,255,.10), transparent 60%),
-                  radial-gradient(900px 600px at 78% 32%, rgba(255,90,190,.07), transparent 58%),
-                  linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
-      box-shadow: 0 18px 60px rgba(0,0,0,.55);
-      display:block;
-    }
+canvas{
+width:100%;
+height:auto;
+aspect-ratio:16/9;
+border-radius:18px;
+border:1px solid rgba(255,255,255,.12);
+background: radial-gradient(1200px 700px at 25% 25%, rgba(90,180,255,.10), transparent 60%),
+radial-gradient(900px 600px at 78% 32%, rgba(255,90,190,.07), transparent 58%),
+linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+box-shadow: 0 18px 60px rgba(0,0,0,.55);
+display:block;
+}
 
-    .hint{ opacity:.82; margin: 8px 2px 0; font-size:14px; }
+.hint{ opacity:.82; margin: 8px 2px 0; font-size:14px; }
 
-    .overlay{
-      position:absolute; inset:0;
-      display:grid; place-items:center;
-      pointer-events:none;
-    }
-    .card{
-      pointer-events:auto;
-      width:min(560px, 92vw);
-      background: rgba(8,12,24,.74);
-      border:1px solid rgba(255,255,255,.16);
-      border-radius:18px;
-      padding: 18px 16px;
-      backdrop-filter: blur(10px);
-      box-shadow: 0 22px 80px rgba(0,0,0,.55);
-      text-align:center;
-    }
-    .title{ font-size:22px; font-weight: 950; margin: 2px 0 10px; }
-    .sub{ opacity:.9; margin:0 0 14px; line-height:1.45; }
-    .row{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+.overlay{
+position:absolute; inset:0;
+display:grid; place-items:center;
+pointer-events:none;
+}
+.card{
+pointer-events:auto;
+width:min(560px, 92vw);
+background: rgba(8,12,24,.74);
+border:1px solid rgba(255,255,255,.16);
+border-radius:18px;
+padding: 18px 16px;
+backdrop-filter: blur(10px);
+box-shadow: 0 22px 80px rgba(0,0,0,.55);
+text-align:center;
+}
+.title{ font-size:22px; font-weight: 950; margin: 2px 0 10px; }
+.sub{ opacity:.9; margin:0 0 14px; line-height:1.45; }
+.row{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
 
-    /* Mobile controls */
-    .touch{
-      margin-top:10px;
-      display:none;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap:10px;
-      user-select:none;
-      -webkit-user-select:none;
-    }
-    .touch .btn{ padding: 14px 12px; }
-    @media (pointer: coarse){
-      .touch{ display:grid; }
-      .hint{ display:none; }
-    }
-  </style>
+@keyframes pulse {
+  0%   { transform: scale(1);   box-shadow: 0 0 0 rgba(255,255,255,0.0); }
+  50%  { transform: scale(1.05); box-shadow: 0 0 18px rgba(255,255,255,0.45); }
+  100% { transform: scale(1);   box-shadow: 0 0 0 rgba(255,255,255,0.0); }
+}
+
+.pulse {
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+/* Mobile controls */
+.touch{
+margin-top:10px;
+display:none;
+grid-template-columns: 1fr 1fr 1fr;
+gap:10px;
+user-select:none;
+-webkit-user-select:none;
+}
+.touch .btn{ padding: 14px 12px; }
+@media (pointer: coarse){
+.touch{ display:grid; }
+.hint{ display:none; }
+}
+</style>
 </head>
 
 <body>
-  <div class="wrap">
-    <div class="topbar">
-      <div class="stats">
-        <div class="pill" id="scorePill">Score: 0</div>
-        <div class="pill" id="levelPill">Level: 1</div>
-        <div class="pill" id="livesPill">Lives: 3</div>
-        <div class="pill" id="bestPill">Best: 0</div>
-      </div>
-      <div class="row">
-        <button class="btn" id="pauseBtn">Pause</button>
-        <button class="btn" id="restartBtn">Restart</button>
-      </div>
-    </div>
+<div class="wrap">
+<div class="topbar">
+<div class="stats">
+<div class="pill" id="scorePill">Score: 0</div>
+<div class="pill" id="levelPill">Level: 1</div>
+<div class="pill" id="livesPill">Lives: 3</div>
+<div class="pill" id="bestPill">Best: 0</div>
+</div>
+<div class="row">
+<button class="btn" id="pauseBtn">Pause</button>
+<button class="btn" id="restartBtn">Restart</button>
+</div>
+</div>
 
-    <div style="position:relative;">
-      <canvas id="game" width="960" height="540"></canvas>
+<div style="position:relative;">
+<canvas id="game" width="960" height="540"></canvas>
 
-      <div class="overlay" id="overlay" style="display:grid;">
-        <div class="card">
-          <div class="title" id="overlayTitle">Captain Luke’s Space Odyssey</div>
-          <p class="sub" id="overlayText">
-            Navigate the HUD void.<br/>
-            Collect <b>⭐</b> energy • Avoid <b>☄</b> hazards.<br/><br/>
-            Move: <b>WASD</b>/<b>Arrows</b> • Boost: <b>Space</b> • Shoot: <b>Shift</b>
-          </p>
-          <div class="row">
-            <button class="btn" id="overlayPrimary">Start Mission</button>
-            <button class="btn" id="overlaySecondary">How to Play</button>
-          </div>
-        </div>
-      </div>
-    </div>
+<div class="overlay" id="overlay" style="display:grid;">
+<div class="card">
+<div class="title" id="overlayTitle">Captain Luke’s Space Odyssey</div>
+<p class="sub" id="overlayText">
+Navigate the HUD void.<br/>
+Collect <b>⭐</b> energy • Avoid <b>☄</b> hazards.<br/><br/>
+Move: <b>WASD</b>/<b>Arrows</b> • Boost: <b>Space</b> • Shoot: <b>Shift</b>
+</p>
+<div class="row">
+<button class="btn" id="overlayPrimary">Start Mission</button>
+<button class="btn" id="overlaySecondary">How to Play</button>
+</div>
+</div>
+</div>
+</div>
 
-    <div class="hint">
-      Move: <b>WASD</b> / <b>Arrow keys</b> • Boost: <b>Space</b> (cooldown ring) • Shoot: <b>Shift</b> • Pause: <b>P</b> • Collect ⭐, avoid ☄
-    </div>
+<div class="hint">
+Move: <b>WASD</b> / <b>Arrow keys</b> • Boost: <b>Space</b> (cooldown ring) • Shoot: <b>Shift</b> • Pause: <b>P</b> • Collect ⭐, avoid ☄
+</div>
 
-    <div class="touch" aria-label="Touch controls">
-      <button class="btn" id="leftBtn">⬅️ Left</button>
-      <button class="btn" id="upBtn">⬆️ Up</button>
-      <button class="btn" id="rightBtn">➡️ Right</button>
-      <button class="btn" id="downBtn" style="grid-column: 2;">⬇️ Down</button>
-      <button class="btn" id="dashBtn" style="grid-column: 3;">⚡ Boost</button>
-    </div>
-  </div>
+<div class="touch" aria-label="Touch controls">
+<button class="btn" id="leftBtn">⬅️ Left</button>
+<button class="btn" id="upBtn">⬆️ Up</button>
+<button class="btn" id="rightBtn">➡️ Right</button>
+<button class="btn" id="downBtn" style="grid-column: 2;">⬇️ Down</button>
+<button class="btn" id="dashBtn" style="grid-column: 3;">⚡ Boost</button>
+</div>
+</div>
 
 <script>
-(() => {
-  const canvas = document.getElementById('game');
-  const ctx = canvas.getContext('2d');
 
-  const scorePill = document.getElementById('scorePill');
-  const levelPill = document.getElementById('levelPill');
-  const livesPill = document.getElementById('livesPill');
-  const bestPill  = document.getElementById('bestPill');
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
 
-  const pauseBtn   = document.getElementById('pauseBtn');
-  const restartBtn = document.getElementById('restartBtn');
+const scorePill = document.getElementById('scorePill');
+const levelPill = document.getElementById('levelPill');
+const livesPill = document.getElementById('livesPill');
+const bestPill = document.getElementById('bestPill');
 
-  const overlay = document.getElementById('overlay');
-  const overlayTitle = document.getElementById('overlayTitle');
-  const overlayText  = document.getElementById('overlayText');
-  const overlayPrimary = document.getElementById('overlayPrimary');
-  const overlaySecondary = document.getElementById('overlaySecondary');
+const pauseBtn = document.getElementById('pauseBtn');
+const restartBtn = document.getElementById('restartBtn');
+const topbar = document.querySelector('.topbar');
 
-  const bestKey = "captain_luke_space_odyssey_best_v1";
-  let best = Number(localStorage.getItem(bestKey) || 0);
+const overlay = document.getElementById('overlay');
+const overlayTitle = document.getElementById('overlayTitle');
+const overlayText = document.getElementById('overlayText');
+const overlayPrimary = document.getElementById('overlayPrimary');
+const overlaySecondary = document.getElementById('overlaySecondary');
 
-  const W = () => canvas.width;
-  const H = () => canvas.height;
+const bestKey = "captain_luke_space_odyssey_best_v1";
+let best = Number(localStorage.getItem(bestKey) || 0);
 
-  const rand  = (a,b) => a + Math.random()*(b-a);
-  const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+const normalMusic = new Audio("Intro.mp3");
+normalMusic.loop = true;
+normalMusic.volume = 0.5;
 
-  // Brand colours (HUD)
-  const C_CYAN    = "rgba(120, 210, 255, 0.95)";
-  const C_CYAN_G  = "rgba(120, 210, 255, 0.55)";
-  const C_MAG     = "rgba(255, 95, 200, 0.92)";
-  const C_MAG_G   = "rgba(255, 95, 200, 0.55)";
-  const C_STAR    = "rgba(255, 235, 160, 0.96)";
+const bossMusic = new Audio("Boss.mp3");
+bossMusic.loop = true;
+bossMusic.volume = 0.6;
 
-  // NEW: Boss cadence
-  const BOSS_EVERY = 3;
+const guettaBossTrack = new Audio("audio/guettabosstrack.mp3");
+guettaBossTrack.loop = true;
+guettaBossTrack.volume = 0.85;
 
-  const keys = new Set();
-  window.addEventListener('keydown', (e) => {
-    const k = e.key.toLowerCase();
-    keys.add(k);
-    if (k === 'p') togglePause();
-    if (k === 'r') hardRestart();
-    if (k === 'shift') shoot(); // shoot
-    if (['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k)) e.preventDefault();
-  }, { passive:false });
-  window.addEventListener('keyup', (e) => keys.delete(e.key.toLowerCase()));
+const saulIntroTrack = new Audio("audio/saulintrotrack.mp3");
+saulIntroTrack.loop = false;
+saulIntroTrack.volume = 1;
 
-  // Touch
-  const hold = (btn, onDown, onUp) => {
-    const down = (e) => { e.preventDefault(); onDown(); };
-    const up   = (e) => { e.preventDefault(); onUp(); };
-    btn.addEventListener('pointerdown', down);
-    btn.addEventListener('pointerup', up);
-    btn.addEventListener('pointercancel', up);
-    btn.addEventListener('pointerleave', up);
-  };
 
-  let touchDir = {x:0,y:0};
-  const setDir = (x,y) => { touchDir.x = x; touchDir.y = y; };
+const gameOverMusic = new Audio("gameover.mp3");
+gameOverMusic.loop = false;
+gameOverMusic.volume = 0.7;
 
-  const leftBtn  = document.getElementById('leftBtn');
-  const rightBtn = document.getElementById('rightBtn');
-  const upBtn    = document.getElementById('upBtn');
-  const downBtn  = document.getElementById('downBtn');
-  const dashBtn  = document.getElementById('dashBtn');
+const heartbeatMusic = new Audio("heartbeat.mp3");
+heartbeatMusic.loop = true;
+heartbeatMusic.volume = 1; // subtle, not annoying
 
-  hold(leftBtn,  ()=>setDir(-1,touchDir.y), ()=>setDir(0,touchDir.y));
-  hold(rightBtn, ()=>setDir( 1,touchDir.y), ()=>setDir(0,touchDir.y));
-  hold(upBtn,    ()=>setDir(touchDir.x,-1), ()=>setDir(touchDir.x,0));
-  hold(downBtn,  ()=>setDir(touchDir.x, 1), ()=>setDir(touchDir.x,0));
+const MUSIC_VOL_NORMAL = 0.85;
+const MUSIC_VOL_PAUSED = 0.05;
 
-  let dashPressed = false;
 
-  // double-tap on ⚡ to shoot (keeps hold-to-boost working)
-  let lastDashTap = 0;
-  const DOUBLE_TAP_MS = 320;
+const BOSSES = [
+  // 🟢 Boss 1 — Intro
+  {
+    id: 1,
+    name: "DARTH GUETTA",
+    title: "THE DJ OF DEATH",
+    intro: "Prepare to dance with pure evil...",
+    defeat: "The bass dropped… FOREVER!",
+    color: "rgba(0,230,255,1)",
 
-  dashBtn.addEventListener('pointerdown', (e)=>{
-    e.preventDefault();
-    dashPressed = true;
+    baseHP: 24,
+    hpPerLevel: 2,
 
-    const now = performance.now();
-    if (now - lastDashTap <= DOUBLE_TAP_MS) {
-      shoot();
-      lastDashTap = 0;
-    } else {
-      lastDashTap = now;
+    move(dt, boss) {
+  boss.wobble += dt * 1.6;
+  boss.x = W()/2 + Math.sin(boss.wobble) * 140;
+
+  // 🎧 DJ stamina regen (slow, capped)
+  boss.hp = Math.min(boss.hp + dt * 0.45, boss.hpMax);
+},
+
+    fire(dt, boss) {
+      boss.fireTimer -= dt;
+      if (boss.fireTimer <= 0) {
+        boss.fireTimer = rand(1.0, 1.6);
+        bossShots.push({
+          x: boss.x,
+          y: boss.y + boss.r,
+          r: 8,
+          vy: 220
+        });
+      }
     }
-  });
-  dashBtn.addEventListener('pointerup',   (e)=>{ e.preventDefault(); dashPressed = false; });
-  dashBtn.addEventListener('pointercancel',(e)=>{ e.preventDefault(); dashPressed = false; });
+  },
 
-  // Game state
-  let running = false;
-  let gameOver = false;
-  let score = 0;
-  let level = 1;
-  let lives = 3;
+  // 🟡 Boss 2 — Gimmick / Gravity
+  {
+    id: 3,
+    name: "SAUL GRAVITY’MAN",
+  title: "BETTER CALL A LAWYER",
+  intro: "Lightning bolts shoot from my fingertips!",
+  defeat: "Case dismissed.",
 
-  // FX state
-  let shakeT = 0;
-  let levelFlashT = 0;
-  let hudPulseT = 0;
+  baseHP: 14,
+  hpPerLevel: 4,
 
-  const player = {
-    x: W()/2, y: H()*0.75,
-    r: 16,
-    speed: 240,
-    dashSpeed: 580,
-    dashCooldown: 0,
-    invuln: 0,
-    flame: 0
-  };
+  // 🎨 Saul palette (legal menace)
+  coreColor: "rgba(20, 15, 10, 0.95)",       // near-black suit
+  glowColor: "rgba(200, 40, 40, 0.9)",       // danger red
+  ringColor: "rgba(255, 200, 40, 0.85)",     // legal yellow
 
-  const stars = [];
-  const enemies = [];
-  const particles = [];
 
-  // bullets
-  const bullets = [];
-  const BULLET_SPEED = 720;
-  const BULLET_LIFE = 0.85;
+    move(dt, boss) {
+  // ⬇️ Creeping entry
+  if (boss.entryT < 1) {
+    boss.entryT = Math.min(boss.entryT + dt * 0.35, 1);
 
-  function shoot() {
-    if (!running || gameOver) return;
-    bullets.push({
-      x: player.x,
-      y: player.y - player.r - 10,
-      r: 3,
-      vy: -BULLET_SPEED,
-      life: BULLET_LIFE
-    });
+    // Smooth ease-in
+    const ease = boss.entryT * boss.entryT * (3 - 2 * boss.entryT);
+    boss.y = -120 + ease * 230; // settles around y ≈ 110
+    return; // no movement yet
   }
 
-  // =========================
-  // NEW: BOSS + HEART SYSTEMS
-  // =========================
-  let boss = null;
-  let bossActive = false;
-  let pendingLevel = 1;
+  // Normal Saul motion
+  boss.angle += dt;
+  boss.x = W() / 2 + Math.cos(boss.angle) * 180;
+  boss.y = 110 + Math.sin(boss.angle * 2) * 40;
+},
 
-  // NEW: boss attacks
-  const bossShots = [];
 
-  const hearts = [];
-  const MAX_LIVES = 5;
-  let heartTimer = rand(14, 26);
+    fire(dt, boss) {
 
-  function spawnBoss(nextLevel) {
-    bossActive = true;
-    pendingLevel = nextLevel;
-    boss = {
-      x: W()/2,
-      y: -140,
-      r: 48,
-      hpMax: 5 + nextLevel * 2,
-      hp: 5 + nextLevel * 2,
-      vy: 80,
-      wobble: rand(0, Math.PI*2),
-      heat: rand(0.75, 1.0),
-      fireTimer: rand(0.9, 1.4) // NEW
-    };
-    hudPulseT = 0.18;
-  }
+  // ⏳ Saul does NOT fire while entering
+  if (boss.entryT < 1) return;
 
-  function spawnHeart() {
-    hearts.push({
-      x: rand(48, W()-48),
-      y: rand(64, H()-120),
-      r: 12,
-      pulse: rand(0, Math.PI*2)
-    });
-  }
+  boss.fireTimer -= dt;
+  if (boss.fireTimer <= 0) {
+    boss.fireTimer = boss.enrage ? 0.6 : 1.1;
 
-  function drawBoss(b) {
-    ctx.save();
+// ⚖️ No HUD flash for Saul (too noisy)
+if (currentBossData.id !== 3) {
+  hudPulseT = Math.max(hudPulseT, 0.08);
+}
 
-    // tail glow
-    ctx.globalAlpha = 0.65;
-    const tailLen = 46;
-    const g = ctx.createLinearGradient(b.x, b.y-b.r, b.x, b.y + tailLen);
-    g.addColorStop(0, `rgba(255,95,200,${0.25*b.heat})`);
-    g.addColorStop(1, `rgba(255,95,200,0)`);
-    ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.moveTo(b.x - b.r*0.70, b.y + b.r*0.25);
-    ctx.lineTo(b.x + b.r*0.70, b.y + b.r*0.25);
-    ctx.lineTo(b.x, b.y + tailLen);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.globalAlpha = 1;
-
-    // outer ring
-    ctx.beginPath();
-    ctx.arc(b.x, b.y, b.r+8, 0, Math.PI*2);
-    ctx.strokeStyle = `rgba(255,95,200,${0.25*b.heat})`;
-    ctx.lineWidth = 4;
-    ctx.shadowColor = `rgba(255,95,200,${0.70*b.heat})`;
-    ctx.shadowBlur = 28;
-    ctx.stroke();
-
-    // core
-    ctx.shadowBlur = 0;
-    ctx.beginPath();
-    ctx.arc(b.x, b.y, b.r, 0, Math.PI*2);
-    ctx.fillStyle = "rgba(35,14,26,0.96)";
-    ctx.fill();
-
-    // core outline
-    ctx.beginPath();
-    ctx.arc(b.x, b.y, b.r, 0, Math.PI*2);
-    ctx.strokeStyle = `rgba(255,95,200,${0.80*b.heat})`;
-    ctx.lineWidth = 2.5;
-    ctx.shadowColor = `rgba(255,95,200,${0.95*b.heat})`;
-    ctx.shadowBlur = 30;
-    ctx.stroke();
-
-    // HP ring
-    const t = clamp(b.hp / b.hpMax, 0, 1);
-    ctx.shadowBlur = 0;
-    ctx.lineWidth = 5;
-    ctx.strokeStyle = "rgba(255,255,255,0.70)";
-    ctx.beginPath();
-    ctx.arc(b.x, b.y, b.r + 14, -Math.PI/2, -Math.PI/2 + t*Math.PI*2);
-    ctx.stroke();
-
-    ctx.restore();
-  }
-
-  function drawHeart(h) {
-    ctx.save();
-    ctx.translate(h.x, h.y);
-
-    const s = 1 + Math.sin(h.pulse)*0.10;
-    ctx.scale(s, s);
-
-    ctx.beginPath();
-    ctx.moveTo(0, 6);
-    ctx.bezierCurveTo(-13, -5, -9, -18, 0, -10);
-    ctx.bezierCurveTo( 9, -18,  13, -5, 0, 6);
-    ctx.closePath();
-
-    ctx.fillStyle = "rgba(255, 90, 140, 0.92)";
-    ctx.shadowColor = "rgba(255, 90, 140, 0.70)";
-    ctx.shadowBlur = 18;
-    ctx.fill();
-
-    ctx.shadowBlur = 0;
-    ctx.globalAlpha = 0.35;
-    ctx.fillStyle = "rgba(255,255,255,1)";
-    ctx.beginPath();
-    ctx.ellipse(-4, -6, 3.2, 4.6, -0.35, 0, Math.PI*2);
-    ctx.fill();
-
-    ctx.restore();
-  }
-  // =========================
-  // END NEW SYSTEMS
-  // =========================
-
-  // Minimal dust
-  const dust = Array.from({length: 70}, () => ({
-    x: rand(0, W()), y: rand(0, H()),
-    s: rand(0.8, 2.2),
-    a: rand(0.18, 0.55),
-    v: rand(6, 22),
-  }));
-
-  function reset() {
-    running = false;
-    gameOver = false;
-
-    score = 0;
-    level = 1;
-    lives = 3;
-
-    player.x = W()/2; player.y = H()*0.75;
-    player.dashCooldown = 0;
-    player.invuln = 0;
-    player.flame = 0;
-
-    shakeT = 0;
-    levelFlashT = 0;
-    hudPulseT = 0;
-
-    stars.length = 0; enemies.length = 0; particles.length = 0;
-    bullets.length = 0;
-
-    // NEW: reset boss/hearts
-    boss = null;
-    bossActive = false;
-    pendingLevel = 1;
-    bossShots.length = 0;
-
-    hearts.length = 0;
-    heartTimer = rand(14, 26);
-
-    spawnStar();
-    for (let i=0;i<3;i++) spawnEnemy();
-
-    updateUI();
-  }
-
-  function hardRestart() {
-    reset();
-    showOverlay("Captain Luke’s Space Odyssey",
-      "Collect <b>⭐</b> energy • Avoid <b>☄</b> hazards.<br/><br/>Move: <b>WASD</b>/<b>Arrows</b> • Boost: <b>Space</b> • Shoot: <b>Shift</b> • Pause: <b>P</b>",
-      "Start Mission",
-      "How to Play"
-    );
-  }
-
-  function updateUI() {
-    scorePill.textContent = `Score: ${score}`;
-    levelPill.textContent = `Level: ${level}`;
-    livesPill.textContent = `Lives: ${lives}`;
-    bestPill.textContent  = `Best: ${best}`;
-  }
-
-  function showOverlay(title, html, primaryText="Resume", secondaryText="Restart") {
-    overlayTitle.textContent = title;
-    overlayText.innerHTML = html;
-    overlayPrimary.textContent = primaryText;
-    overlaySecondary.textContent = secondaryText;
-    overlay.style.display = 'grid';
-  }
-  function hideOverlay() {
-    overlay.style.display = 'none';
-  }
-
-  function startGame() {
-    hideOverlay();
-    running = true;
-    gameOver = false;
-  }
-
-  function togglePause() {
-    if (gameOver) return;
-    running = !running;
-    if (!running) showOverlay("Paused", "Press <b>P</b> to resume.", "Resume", "Restart");
-    else hideOverlay();
-  }
-
-  pauseBtn.onclick = togglePause;
-  restartBtn.onclick = hardRestart;
-
-  overlayPrimary.onclick = () => {
-    if (gameOver) { hardRestart(); return; }
-    if (!running) startGame();
-    else { running = true; hideOverlay(); }
-  };
-  overlaySecondary.onclick = () => {
-    if (overlaySecondary.textContent.toLowerCase().includes("how")) {
-      showOverlay(
-        "How to Play",
-        "You are the ship.<br/><br/>• Collect <b>⭐</b> to score<br/>• Avoid <b>☄</b> hazards<br/>• <b>Space</b> = Boost (cooldown ring)<br/>• <b>Shift</b> = Shoot (mobile: double-tap <b>⚡</b>)<br/><br/>Tip: boost through tight gaps.",
-        "Start Mission",
-        "Back"
-      );
-      overlaySecondary.textContent = "Back";
-      return;
-    }
-    hardRestart();
-  };
-
-  function spawnStar() {
-    stars.push({
-      x: rand(40, W()-40),
-      y: rand(40, H()-40),
-      r: 10,
-      spin: rand(0, Math.PI*2),
-      pulse: rand(0, Math.PI*2)
-    });
-  }
-
-  function spawnEnemy() {
-    enemies.push({
-      x: rand(30, W()-30),
-      y: rand(-320, -40),
-      r: rand(13, 18),
-      vy: rand(120, 190) + level*18,
-      vx: rand(-55, 55),
-      wobble: rand(0, Math.PI*2),
-      heat: rand(0.65, 1.0)
-    });
-  }
-
-  function burst(x,y, n=12, c="rgba(255,255,255,0.9)") {
-    for (let i=0;i<n;i++){
-      const a = rand(0, Math.PI*2);
-      const s = rand(60, 220);
-      particles.push({
-        x,y,
-        vx: Math.cos(a)*s,
-        vy: Math.sin(a)*s,
-        life: rand(0.22, 0.55),
-        c
+    for (let a = -0.7; a <= 0.7; a += 0.35) {
+      bossShots.push({
+        x: boss.x,
+        y: boss.y + boss.r,
+        r: boss.enrage ? 8 : 7,
+        vx: Math.sin(a) * 120,
+        vy: 200,
+        gravity: 90,
+        color: [
+          "rgba(255, 70, 200, 0.95)",  // 💖 obnoxious pink
+          "rgba(60, 160, 255, 0.95)",  // 🔵 electric blue
+          "rgba(80, 255, 160, 0.95)"   // 🟢 neon green
+        ][Math.floor(Math.random() * 3)]
       });
     }
   }
+}
 
-  function circleHit(a, b) {
-    const dx = a.x - b.x, dy = a.y - b.y;
-    const rr = (a.r + b.r);
-    return dx*dx + dy*dy <= rr*rr;
-  }
+  },
 
-  let last = performance.now();
-  function loop(now) {
-    const dt = Math.min(0.033, (now - last) / 1000);
-    last = now;
+  // 🔴 Boss 3 — Execution check
+  {
+    id: 2,
+    name: "NEON SERAPH",
+    title: "THE MIRROR QUEEN",
+    intro: "Your reflection will betray you.",
+    defeat: "Shattered into starlight.",
 
-    if (running && !gameOver) update(dt);
-    render(now, dt);
+    baseHP: 10,
+    hpPerLevel: 3,
 
-    requestAnimationFrame(loop);
-  }
+    move(dt, boss) {
+      boss.wobble += dt * 2.2;
+      boss.x = W()/2 + Math.sin(boss.wobble) * 220;
+      boss.y = 100 + Math.cos(boss.wobble * 1.5) * 30;
+    },
 
-  function update(dt) {
-    // Level scaling
-    const newLevel = 1 + Math.floor(score / 10);
-
-    // NEW: boss only every 3 levels, otherwise normal level-up
-    if (!bossActive && newLevel !== level) {
-      if (newLevel % BOSS_EVERY === 0) {
-        spawnBoss(newLevel);
-      } else {
-        level = newLevel;
-        levelFlashT = 0.28;
-        hudPulseT = 0.18;
-        if (enemies.length < 12) spawnEnemy();
-      }
-      updateUI();
-    }
-
-    // Movement input
-    let ix = 0, iy = 0;
-    if (keys.has('arrowleft') || keys.has('a')) ix -= 1;
-    if (keys.has('arrowright') || keys.has('d')) ix += 1;
-    if (keys.has('arrowup') || keys.has('w')) iy -= 1;
-    if (keys.has('arrowdown') || keys.has('s')) iy += 1;
-
-    ix += touchDir.x; iy += touchDir.y;
-    ix = clamp(ix, -1, 1); iy = clamp(iy, -1, 1);
-
-    const mag = Math.hypot(ix, iy) || 1;
-    const nx = ix / mag, ny = iy / mag;
-
-    const wantDash = dashPressed || keys.has(' ');
-    let speed = player.speed;
-
-    if (player.dashCooldown > 0) player.dashCooldown -= dt;
-    if (player.invuln > 0) player.invuln -= dt;
-    if (shakeT > 0) shakeT -= dt;
-    if (levelFlashT > 0) levelFlashT -= dt;
-    if (hudPulseT > 0) hudPulseT -= dt;
-
-    if (wantDash && player.dashCooldown <= 0 && (ix || iy)) {
-      speed = player.dashSpeed;
-      player.dashCooldown = 0.9;
-      player.invuln = Math.max(player.invuln, 0.16);
-      player.flame = 1.0;
-      burst(player.x, player.y, 10, C_CYAN_G);
-    }
-
-    player.flame = Math.max(0, player.flame - dt*2.4);
-
-    player.x += nx * speed * dt;
-    player.y += ny * speed * dt;
-
-    player.x = clamp(player.x, player.r, W()-player.r);
-    player.y = clamp(player.y, player.r, H()-player.r);
-
-    // Dust
-    for (const d of dust) {
-      d.y += d.v * dt;
-      if (d.y > H()+10) { d.y = -10; d.x = rand(0, W()); }
-    }
-
-    // Stars
-    for (const s of stars) { s.spin += dt * 3; s.pulse += dt * 2.2; }
-
-    // Enemies
-    for (const e of enemies) {
-      e.wobble += dt * 2.0;
-      e.y += e.vy * dt;
-      e.x += (e.vx + Math.sin(e.wobble) * 36) * dt;
-
-      if (e.x < e.r) { e.x = e.r; e.vx *= -1; }
-      if (e.x > W()-e.r) { e.x = W()-e.r; e.vx *= -1; }
-
-      if (e.y > H() + 90) {
-        e.y = rand(-280, -40);
-        e.x = rand(30, W()-30);
-        e.vy = rand(120, 190) + level*18;
-        e.heat = rand(0.65, 1.0);
-      }
-    }
-
-    // NEW: Boss motion + firing
-    if (bossActive && boss) {
-      boss.wobble += dt * 1.6;
-      boss.x = W()/2 + Math.sin(boss.wobble) * 140;
-      boss.y += boss.vy * dt;
-      if (boss.y > 120) boss.y = 120;
-
+    fire(dt, boss) {
       boss.fireTimer -= dt;
       if (boss.fireTimer <= 0) {
-        boss.fireTimer = rand(0.9, 1.6);
-        bossShots.push({
-          x: boss.x,
-          y: boss.y + boss.r + 6,
-          r: 8,
-          vy: 220 + level * 12
+        boss.fireTimer = rand(1.2, 1.8);
+        [-1, 1].forEach(dir => {
+          bossShots.push({
+            x: boss.x + dir * 22,
+            y: boss.y + boss.r,
+            r: 6,
+            vy: 260
+          });
         });
-        burst(boss.x, boss.y + boss.r, 6, C_MAG_G);
-      }
-    }
-
-    // Particles
-    for (let i=particles.length-1; i>=0; i--) {
-      const p = particles[i];
-      p.life -= dt;
-      p.x += p.vx * dt;
-      p.y += p.vy * dt;
-      p.vx *= Math.pow(0.05, dt);
-      p.vy *= Math.pow(0.05, dt);
-      if (p.life <= 0) particles.splice(i,1);
-    }
-
-    // NEW: Boss shots update + collision
-    for (let i = bossShots.length - 1; i >= 0; i--) {
-      const s = bossShots[i];
-      s.y += s.vy * dt;
-
-      if (s.y > H() + 20) {
-        bossShots.splice(i, 1);
-        continue;
-      }
-
-      if (player.invuln <= 0 && circleHit(player, s)) {
-        bossShots.splice(i, 1);
-        lives -= 1;
-        player.invuln = 1.0;
-        shakeT = 0.22;
-        burst(player.x, player.y, 22, C_MAG_G);
-        updateUI();
-
-        if (lives <= 0) {
-          gameOver = true;
-          running = false;
-          if (score > best) {
-            best = score;
-            localStorage.setItem(bestKey, String(best));
-          }
-          updateUI();
-          showOverlay(
-            "Mission Failed",
-            `Final score: <b>${score}</b><br/>Press <b>R</b> to restart.`,
-            "Restart",
-            "Restart"
-          );
-        }
-      }
-    }
-
-    // Bullets
-    for (let i = bullets.length - 1; i >= 0; i--) {
-      const b = bullets[i];
-      b.y += b.vy * dt;
-      b.life -= dt;
-
-      if (b.life <= 0 || b.y < -20) {
-        bullets.splice(i, 1);
-        continue;
-      }
-
-      // NEW: Bullet vs Boss (before enemies)
-      if (bossActive && boss && circleHit(b, boss)) {
-        bullets.splice(i, 1);
-        boss.hp -= 1;
-        burst(boss.x, boss.y, 14, C_MAG_G);
-        hudPulseT = 0.12;
-
-        if (boss.hp <= 0) {
-          bossActive = false;
-          boss = null;
-          bossShots.length = 0;
-
-          level = pendingLevel;
-          levelFlashT = 0.28;
-          hudPulseT = 0.18;
-          if (enemies.length < 12) spawnEnemy();
-
-          score += 5;
-          updateUI();
-
-          burst(W()/2, 120, 24, "rgba(255,255,255,0.85)");
-        }
-        continue;
-      }
-
-      for (const e of enemies) {
-        if (circleHit(b, e)) {
-          bullets.splice(i, 1);
-
-          burst(e.x, e.y, 16, C_MAG_G);
-          score += 2;
-          updateUI();
-
-          e.y = rand(-280, -40);
-          e.x = rand(30, W()-30);
-          e.vy = rand(120, 190) + level*18;
-          e.vx = rand(-55, 55);
-          e.wobble = rand(0, Math.PI*2);
-          e.heat = rand(0.65, 1.0);
-
-          break;
-        }
-      }
-    }
-
-    // Collect star
-    for (let i=stars.length-1; i>=0; i--) {
-      const s = stars[i];
-      if (circleHit(player, s)) {
-        stars.splice(i,1);
-        score += 1;
-        burst(s.x, s.y, 14, "rgba(255,235,160,0.85)");
-        spawnStar();
-        updateUI();
-      }
-    }
-
-    // Hearts
-    heartTimer -= dt;
-    if (heartTimer <= 0 && lives < MAX_LIVES && hearts.length === 0) {
-      spawnHeart();
-      heartTimer = rand(14, 26);
-    }
-    for (let i = hearts.length - 1; i >= 0; i--) {
-      const h = hearts[i];
-      h.pulse += dt * 3.2;
-      if (circleHit(player, h)) {
-        hearts.splice(i, 1);
-        lives += 1;
-        burst(h.x, h.y, 18, "rgba(255,90,140,0.85)");
-        hudPulseT = 0.10;
-        updateUI();
-      }
-    }
-
-    // Player vs Boss collision (touching boss hurts)
-    if (bossActive && boss && player.invuln <= 0 && circleHit(player, boss)) {
-      lives -= 1;
-      player.invuln = 1.0;
-      shakeT = 0.22;
-      burst(player.x, player.y, 24, C_MAG_G);
-      updateUI();
-
-      if (lives <= 0) {
-        gameOver = true;
-        running = false;
-        if (score > best) {
-          best = score;
-          localStorage.setItem(bestKey, String(best));
-        }
-        updateUI();
-        showOverlay(
-          "Mission Failed",
-          `Final score: <b>${score}</b><br/>Press <b>R</b> to restart.`,
-          "Restart",
-          "Restart"
-        );
-      }
-    }
-
-    // Hit enemy
-    if (player.invuln <= 0 && !gameOver) {
-      for (const e of enemies) {
-        if (circleHit(player, e)) {
-          lives -= 1;
-          player.invuln = 1.0;
-          shakeT = 0.22;
-          burst(player.x, player.y, 22, C_MAG_G);
-          updateUI();
-
-          if (lives <= 0) {
-            gameOver = true;
-            running = false;
-            if (score > best) {
-              best = score;
-              localStorage.setItem(bestKey, String(best));
-            }
-            updateUI();
-            showOverlay(
-              "Mission Failed",
-              `Final score: <b>${score}</b><br/>Press <b>R</b> to restart.`,
-              "Restart",
-              "Restart"
-            );
-          }
-          break;
-        }
       }
     }
   }
+];
 
-  // ----- DRAWING -----
+function stopAllMusic() {
+  normalMusic.pause();
+  normalMusic.currentTime = 0;
 
-  function drawBackground(now) {
-    ctx.save();
-    const grad = ctx.createRadialGradient(W()*0.5, H()*0.45, 120, W()*0.5, H()*0.5, W()*0.9);
-    grad.addColorStop(0, "rgba(20,28,55,0.10)");
-    grad.addColorStop(1, "rgba(0,0,0,0.32)");
-    ctx.fillStyle = grad;
-    ctx.fillRect(0,0,W(),H());
+  bossMusic.pause();
+  bossMusic.currentTime = 0;
 
-    for (const d of dust) {
-      ctx.globalAlpha = d.a;
-      ctx.fillStyle = "rgba(255,255,255,0.8)";
-      ctx.fillRect(d.x, d.y, d.s, d.s);
-    }
-    ctx.globalAlpha = 1;
+  guettaBossTrack.pause();
+  guettaBossTrack.currentTime = 0;
 
-    ctx.globalAlpha = 0.06;
-    ctx.fillStyle = "rgba(255,255,255,1)";
-    for (let y=0; y<H(); y+=3) ctx.fillRect(0, y, W(), 1);
-    ctx.globalAlpha = 1;
+  saulIntroTrack.pause();
+  saulIntroTrack.currentTime = 0;
 
-    ctx.globalAlpha = 0.08;
-    ctx.strokeStyle = "rgba(120,210,255,0.35)";
-    ctx.lineWidth = 1;
-    for (let x=0; x<=W(); x+=120) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H()); ctx.stroke(); }
-    for (let y=0; y<=H(); y+=120) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W(),y); ctx.stroke(); }
-    ctx.globalAlpha = 1;
+  gameOverMusic.pause();
+  gameOverMusic.currentTime = 0;
+}
 
-    if (hudPulseT > 0) {
-      ctx.globalAlpha = hudPulseT / 0.18 * 0.10;
-      ctx.fillStyle = "rgba(255,95,200,1)";
-      ctx.fillRect(0,0,W(),H());
-      ctx.globalAlpha = 1;
-    }
+function showGameOverOverlay() {
+  let title = "ONE MORE RUN.";
+  let message =
+    "You were learning.<br>" +
+    "You can beat this.<br><br>" +
+    "<span style=\"font-size:1.4em\">💀</span><br>" +
+`<small>Final score: <b>${score}</b></small>`;
+  let button = "GO AGAIN";
 
-    ctx.restore();
+  // Boss-specific flavour
+  if (currentBossData?.id === 3) {
+    title = "CASE DISMISSED.";
+    message =
+      "You should’ve moved sooner.<br>" +
+      "No appeal.<br><br>" +
+      "<span style=\"font-size:1.4em\">💀</span><br>" +
+`<small>Final score: <b>${score}</b></small>`;
+
+    button = "APPEAL THE VERDICT";
+  } else if (currentBossData?.id === 1) {
+    title = "DROP MISSED.";
+    message =
+      "The bass hit harder than expected.<br><br>" +
+      "<span style=\"font-size:1.4em\">💀</span><br>" +
+`<small>Final score: <b>${score}</b></small>`;
+
+
+    button = "RUN IT BACK";
   }
 
-  function drawStar(x,y,r,spin,pulse) {
-    ctx.save();
-    ctx.translate(x,y);
-    ctx.rotate(spin);
+  showOverlay(title, message, button, "Quit");
 
-    const breathe = 1 + Math.sin(pulse)*0.06;
+  // ✨ Entice replay
+  overlayPrimary.classList.add("pulse");
 
-    ctx.beginPath();
-    const spikes = 5;
-    const outer = r*breathe, inner = r*0.48;
-    for (let i=0;i<spikes*2;i++){
-      const a = (i * Math.PI) / spikes;
-      const rr = (i%2===0) ? outer : inner;
-      ctx.lineTo(Math.cos(a)*rr, Math.sin(a)*rr);
-    }
-    ctx.closePath();
+}
 
-    ctx.fillStyle = C_STAR;
-    ctx.shadowColor = "rgba(255,235,160,0.55)";
-    ctx.shadowBlur = 18;
-    ctx.fill();
 
-    ctx.restore();
-  }
 
-  function drawHazard(e) {
-    const tail = clamp((e.vy - 120) / 200, 0, 1);
+function playGameOverMusic() {
+normalMusic.pause();
+bossMusic.pause();
+heartbeatMusic.pause();
+heartbeatMusic.currentTime = 0;
 
-    ctx.save();
-    ctx.globalAlpha = 0.75;
-    const tailLen = 26 + tail*34;
-    const tailW = e.r * 1.35;
+gameOverMusic.currentTime = 0;
+gameOverMusic.play().catch(()=>{});
+}
 
-    const g = ctx.createLinearGradient(e.x, e.y-e.r, e.x, e.y + tailLen);
-    g.addColorStop(0, `rgba(255,95,200,${0.22*e.heat})`);
-    g.addColorStop(1, `rgba(255,95,200,0)`);
-    ctx.fillStyle = g;
+const W = () => canvas.width;
+const H = () => canvas.height;
 
-    ctx.beginPath();
-    ctx.moveTo(e.x - tailW*0.55, e.y + e.r*0.25);
-    ctx.lineTo(e.x + tailW*0.55, e.y + e.r*0.25);
-    ctx.lineTo(e.x, e.y + tailLen);
-    ctx.closePath();
-    ctx.fill();
-    ctx.restore();
+const rand = (a,b) => a + Math.random()*(b-a);
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
 
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(e.x, e.y, e.r+6, 0, Math.PI*2);
-    ctx.strokeStyle = `rgba(255,95,200,${0.20*e.heat})`;
-    ctx.lineWidth = 3;
-    ctx.shadowColor = `rgba(255,95,200,${0.55*e.heat})`;
-    ctx.shadowBlur = 20;
-    ctx.stroke();
-    ctx.restore();
+// Brand colours (HUD)
+const C_CYAN = "rgba(120, 210, 255, 0.95)";
+const C_CYAN_G = "rgba(120, 210, 255, 0.55)";
+const C_MAG = "rgba(255, 95, 200, 0.92)";
+const C_MAG_G = "rgba(255, 95, 200, 0.55)";
+const C_STAR = "rgba(255, 235, 160, 0.96)";
+const C_PURPLE = "#8b00ff";
+const C_PURPLE_G = "rgba(139,0,255,0.9)";
 
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(e.x, e.y, e.r, 0, Math.PI*2);
-    ctx.fillStyle = "rgba(40,18,30,0.95)";
-    ctx.fill();
 
-    ctx.beginPath();
-    ctx.arc(e.x, e.y, e.r, 0, Math.PI*2);
-    ctx.strokeStyle = `rgba(255,95,200,${0.55*e.heat})`;
-    ctx.lineWidth = 2;
-    ctx.shadowColor = `rgba(255,95,200,${0.85*e.heat})`;
-    ctx.shadowBlur = 26;
-    ctx.stroke();
-    ctx.restore();
-  }
+// NEW: Boss cadence
+const BOSS_EVERY = 3;
 
-  function drawShip(now) {
-    const inv = player.invuln > 0 ? (Math.floor(now/90) % 2 ? 0.35 : 1) : 1;
+const keys = new Set();
+window.addEventListener('keydown', (e) => {
+const k = e.key.toLowerCase();
+keys.add(k);
+if (k === 'p') togglePause();
+if (k === 'r') hardRestart();
+if (k === 'shift' && bossIntroTimer <= 0) shoot(); // shoot (disabled during boss intro)
+if (['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k)) e.preventDefault();
+}, { passive:false });
+window.addEventListener('keyup', (e) => keys.delete(e.key.toLowerCase()));
 
-    const moving = (keys.has('a')||keys.has('d')||keys.has('w')||keys.has('s')||
-                    keys.has('arrowleft')||keys.has('arrowright')||keys.has('arrowup')||keys.has('arrowdown')||
-                    touchDir.x||touchDir.y) ? 1 : 0;
+// Touch
+const hold = (btn, onDown, onUp) => {
+const down = (e) => { e.preventDefault(); onDown(); };
+const up = (e) => { e.preventDefault(); onUp(); };
+btn.addEventListener('pointerdown', down);
+btn.addEventListener('pointerup', up);
+btn.addEventListener('pointercancel', up);
+btn.addEventListener('pointerleave', up);
+};
 
-    const flame = (0.20 + moving*0.25 + player.flame*0.65);
-    const flameLen = 10 + flame*18 + Math.sin(now/70)*2;
+let touchDir = {x:0,y:0};
+const setDir = (x,y) => { touchDir.x = x; touchDir.y = y; };
 
-    ctx.save();
-    ctx.globalAlpha = inv;
-    ctx.translate(player.x, player.y);
+const leftBtn = document.getElementById('leftBtn');
+const rightBtn = document.getElementById('rightBtn');
+const upBtn = document.getElementById('upBtn');
+const downBtn = document.getElementById('downBtn');
+const dashBtn = document.getElementById('dashBtn');
 
-    ctx.beginPath();
-    ctx.ellipse(0, 0, player.r+10, player.r+12, 0, 0, Math.PI*2);
-    ctx.fillStyle = "rgba(120,210,255,0.10)";
-    ctx.fill();
+hold(leftBtn, ()=>setDir(-1,touchDir.y), ()=>setDir(0,touchDir.y));
+hold(rightBtn, ()=>setDir( 1,touchDir.y), ()=>setDir(0,touchDir.y));
+hold(upBtn, ()=>setDir(touchDir.x,-1), ()=>setDir(touchDir.x,0));
+hold(downBtn, ()=>setDir(touchDir.x, 1), ()=>setDir(touchDir.x,0));
 
-    if (player.flame > 0.1) {
-      const g = ctx.createLinearGradient(0, player.r*0.7, 0, player.r + flameLen);
-      g.addColorStop(0, "rgba(120,210,255,0.55)");
-      g.addColorStop(1, "rgba(120,210,255,0)");
-      ctx.fillStyle = g;
-      ctx.beginPath();
-      ctx.moveTo(-7, player.r*0.6);
-      ctx.lineTo( 7, player.r*0.6);
-      ctx.lineTo( 0, player.r + flameLen);
-      ctx.closePath();
-      ctx.fill();
-    }
+let dashPressed = false;
 
-    ctx.beginPath();
-    ctx.moveTo(0, -20);
-    ctx.bezierCurveTo(12, -16, 14, 6, 0, 18);
-    ctx.bezierCurveTo(-14, 6, -12, -16, 0, -20);
-    ctx.closePath();
+// double-tap on ⚡ to shoot (keeps hold-to-boost working)
+let lastDashTap = 0;
+const DOUBLE_TAP_MS = 320;
 
-    ctx.fillStyle = C_CYAN;
-    ctx.shadowColor = C_CYAN_G;
-    ctx.shadowBlur = 22;
-    ctx.fill();
+dashBtn.addEventListener('pointerdown', (e)=>{
+e.preventDefault();
+dashPressed = true;
 
-    ctx.beginPath();
-    ctx.ellipse(0, -6, 4.2, 6.2, 0, 0, Math.PI*2);
-    ctx.fillStyle = "rgba(235, 252, 255, 0.92)";
-    ctx.shadowColor = "rgba(235, 252, 255, 0.35)";
-    ctx.shadowBlur = 10;
-    ctx.fill();
+const now = performance.now();
+if (now - lastDashTap <= DOUBLE_TAP_MS) {
+if (bossIntroTimer <= 0) { // ⬅ block shooting during intro
+shoot();
+}
+lastDashTap = 0;
+} else {
+lastDashTap = now;
+}
+});
+dashBtn.addEventListener('pointerup', (e)=>{ e.preventDefault(); dashPressed = false; });
+dashBtn.addEventListener('pointercancel',(e)=>{ e.preventDefault(); dashPressed = false; });
 
-    ctx.shadowBlur = 0;
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = "rgba(255,95,200,0.65)";
-    ctx.beginPath();
-    ctx.moveTo(0, -14);
-    ctx.quadraticCurveTo(6, 0, 0, 14);
-    ctx.stroke();
+// Game state
+let running = false;
+let gameOver = false;
+let score = 0;
+let level = 1;
+let lives = 3;
 
-    const t = clamp(player.dashCooldown / 0.9, 0, 1);
-    ctx.lineWidth = 4;
-    ctx.strokeStyle = "rgba(255,255,255,0.62)";
-    ctx.beginPath();
-    ctx.arc(0, 0, player.r + 12, -Math.PI/2, -Math.PI/2 + (1-t)*Math.PI*2);
-    ctx.stroke();
+// FX state
+let shakeT = 0;
+let levelFlashT = 0;
+let hudPulseT = 0;
+let bossFlashT = 0;
+let bossShockwaveT = 0;
+let bossDefeatTextT = 0;
 
-    ctx.restore();
-  }
+// Cinematic boss intro state (Tron Grid)
+let timeScale = 1;
+let bossIntroTimer = 0;
+let bossIntroPulse = 0;
+let bossIntroZoom = 1;
+let hudYOffset = 0;
+let currentBossData = null;
+let bossDefeatTimer = 0;
 
-  function render(now, dt) {
-    ctx.clearRect(0,0,W(),H());
+const player = {
+x: W()/2, y: H()*0.75,
+r: 16,
+speed: 240,
+dashSpeed: 580,
+dashCooldown: 0,
+invuln: 0,
+flame: 0
+};
 
-    if (shakeT > 0) {
-      const s = (shakeT / 0.22);
-      ctx.save();
-      ctx.translate(rand(-10,10)*s, rand(-10,10)*s);
-    }
+const stars = [];
+const enemies = [];
+const particles = [];
 
-    drawBackground(now);
+// bullets
+const bullets = [];
+const BULLET_SPEED = 720;
+const BULLET_LIFE = 0.85;
 
-    for (const p of particles) {
-      ctx.save();
-      ctx.globalAlpha = Math.max(0, p.life) / 0.55;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, 2.2, 0, Math.PI*2);
-      ctx.fillStyle = p.c || "rgba(255,255,255,0.9)";
-      ctx.fill();
-      ctx.restore();
-    }
+function shoot() {
+if (!running || gameOver) return;
+bullets.push({
+x: player.x,
+y: player.y - player.r - 10,
+r: 3,
+vy: -BULLET_SPEED,
+life: BULLET_LIFE
+});
+}
 
-    for (const b of bullets) {
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(b.x, b.y, b.r, 0, Math.PI*2);
-      ctx.fillStyle = C_CYAN;
-      ctx.shadowColor = C_CYAN_G;
-      ctx.shadowBlur = 12;
-      ctx.fill();
-      ctx.restore();
-    }
+// =========================
+// NEW: BOSS + HEART SYSTEMS
+// =========================
+let boss = null;
+let bossActive = false;
+let pendingLevel = 1;
 
-    for (const s of stars) drawStar(s.x, s.y, s.r, s.spin, s.pulse);
+// NEW: boss attacks
+const bossShots = [];
 
-    for (const e of enemies) drawHazard(e);
+const hearts = [];
+const MAX_LIVES = 5;
+let heartTimer = rand(14, 26);
 
-    // NEW: boss shots (boss fights back)
-    for (const s of bossShots) {
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
-      ctx.fillStyle = C_MAG;
-      ctx.shadowColor = C_MAG_G;
-      ctx.shadowBlur = 18;
-      ctx.fill();
-      ctx.restore();
-    }
+function spawnBoss(nextLevel) {
+  // Pick which boss this is
+  const bossIndex = Math.floor(nextLevel / BOSS_EVERY) - 1;
+  const bossDef = BOSSES[bossIndex % BOSSES.length];
 
-    if (bossActive && boss) drawBoss(boss);
+  // Cinematic intro (slow time, pulse, HUD slide)
+  timeScale = 0.25;
+  bossIntroTimer = 1.4;
+  bossIntroPulse = 0;
+  bossIntroZoom = 1.6;
+  hudYOffset = 10;
 
-    for (const h of hearts) drawHeart(h);
+  // Set current boss data
+  currentBossData = bossDef;
 
-    drawShip(now);
+// ⚖️ Saul Gravity’Man intro pacing
+if (currentBossData.id === 3) {
+  bossIntroTimer = 1.9;   // longer, more ominous
+  timeScale = 0.22;       // heavier slow-mo
+}
 
-    if (levelFlashT > 0) {
-      ctx.save();
-      const a = (levelFlashT / 0.28) * 0.22;
-      ctx.fillStyle = `rgba(255,255,255,${a})`;
-      ctx.fillRect(0,0,W(),H());
-      ctx.restore();
-    }
+ // 🎵 Boss music handling
+stopAllMusic();
 
-    if (shakeT > 0) ctx.restore();
+if (currentBossData.id === 1) {
+  // 🎧 Darth Guetta — full boss track
+  guettaBossTrack.play();
 
-    if (score === 0 && !gameOver && !running) {
-      ctx.save();
-      ctx.fillStyle = "rgba(255,255,255,0.82)";
-      ctx.font = "750 18px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-      ctx.textAlign = "center";
-      ctx.fillText("Press Start Mission • Boost with Space • Shoot with Shift.", W()/2, 46);
-      ctx.restore();
-    }
-  }
+} else if (currentBossData.id === 3) {
+  // ⚖️ Saul Gravity’Man — intro sting ONLY
+  saulIntroTrack.currentTime = 0;
+  saulIntroTrack.play().catch(()=>{});
 
-  // Boot
-  bestPill.textContent = `Best: ${best}`;
-  reset();
-  showOverlay(
-    "Captain Luke’s Space Odyssey",
-    "Navigate the HUD void.<br/>Collect <b>⭐</b> energy • Avoid <b>☄</b> hazards.<br/><br/>Move: <b>WASD</b>/<b>Arrows</b> • Boost: <b>Space</b> • Shoot: <b>Shift</b> • Pause: <b>P</b><br/><small>(Mobile: double-tap ⚡ to shoot)</small>",
-    "Start Mission",
-    "How to Play"
-  );
+} else {
+  // 👹 All other bosses — normal boss music
+  bossMusic.play();
+}
 
-  // Start button behavior for first screen (kept as your original pattern)
-  overlayPrimary.onclick = () => {
-    if (overlayPrimary.textContent.toLowerCase().includes("start")) startGame();
-    else { running = true; hideOverlay(); }
+
+
+  bossActive = true;
+  pendingLevel = nextLevel;
+
+  // Create boss instance
+  boss = {
+    x: W() / 2,
+    y: -140,
+    r: 48,
+
+    hpMax: bossDef.baseHP + nextLevel * bossDef.hpPerLevel,
+    hp: bossDef.baseHP + nextLevel * bossDef.hpPerLevel,
+
+    vy: 80,
+    wobble: rand(0, Math.PI * 2),
+    angle: rand(0, Math.PI * 2),
+    heat: rand(0.75, 1.0),
+    fireTimer: rand(0.8, 1.4)
   };
+// ⚖️ Saul Gravity’Man creeps in
+if (currentBossData.id === 3) {
+  boss.y = -120;   // start off-screen
+  boss.entryT = 0; // entry progress (0 → 1)
+}
 
-  requestAnimationFrame(loop);
-})();
+
+  // 🔥 HUD pulse on arrival
+  hudPulseT = 0.18;
+}
+
+function spawnHeart() {
+hearts.push({
+x: rand(48, W()-48),
+y: rand(64, H()-120),
+r: 12,
+pulse: rand(0, Math.PI*2)
+});
+}
+function drawBoss(b) {
+  ctx.save();
+
+  // 🎨 Boss colour palette (data-driven)
+  const glow = currentBossData?.glowColor || "rgba(138,43,226,0.8)";
+  const core = currentBossData?.coreColor || "rgba(80,30,120,0.85)";
+  const ring = currentBossData?.ringColor || glow;
+
+// 🎧 Darth Guetta disco mode (Boss 1 only)
+let discoGlow = glow;
+let discoCore = core;
+let discoRing = ring;
+
+if (currentBossData?.id === 1) {
+  const t = performance.now() * 0.006;
+
+  const discoColors = [
+    "rgba(138,43,226,0.9)", // Neon Purple
+    "rgba(0,180,255,0.9)",  // Electric Blue
+    "rgba(0,255,160,0.9)"   // Neon Green
+  ];
+
+  const i = Math.floor(t) % discoColors.length;
+  const next = (i + 1) % discoColors.length;
+  const mix = t % 1;
+
+  // Simple colour crossfade
+  discoGlow = discoColors[i];
+  discoRing = discoColors[i];
+  discoCore = discoColors[next];
+}
+
+
+const beat = (Math.sin(performance.now() * 0.015) * 0.5 + 0.5); // faster pulse
+const pulseGlow = 25 + beat * 35; // bigger glow swing
+const pulseAlpha = 0.6 + beat * 0.4; // more brightness swing
+
+// 🎧 Tail glow
+ctx.globalAlpha = 0.65;
+const tailLen = 46;
+const g = ctx.createLinearGradient(b.x, b.y - b.r, b.x, b.y + tailLen);
+
+ctx.save();
+ctx.globalAlpha = 0.25 * b.heat;
+g.addColorStop(0, discoGlow);
+g.addColorStop(1, "rgba(0,0,0,0)");
+ctx.restore();
+
+ctx.fillStyle = g;
+ctx.beginPath();
+ctx.moveTo(b.x - b.r * 0.70, b.y + b.r * 0.25);
+ctx.lineTo(b.x + b.r * 0.70, b.y + b.r * 0.25);
+ctx.lineTo(b.x, b.y + tailLen);
+ctx.closePath();
+ctx.fill();
+
+
+// 🟢 Outer ring
+ctx.beginPath();
+ctx.arc(b.x, b.y, b.r + 8, 0, Math.PI * 2);
+ctx.strokeStyle = discoRing;
+ctx.lineWidth = 4;
+ctx.shadowColor = discoRing;
+ctx.shadowBlur = 28;
+ctx.stroke();
+
+// 🟣 Core
+ctx.shadowBlur = 0;
+ctx.beginPath();
+ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+ctx.fillStyle = discoCore;
+ctx.fill();
+
+// ✨ Core outline
+ctx.beginPath();
+ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+ctx.strokeStyle = discoGlow;
+ctx.lineWidth = 2.5;
+ctx.shadowColor = discoGlow;
+ctx.shadowBlur = pulseGlow;
+ctx.stroke();
+
+// HP ring (unchanged)
+const t = clamp(b.hp / b.hpMax, 0, 1);
+ctx.shadowBlur = 0;
+ctx.lineWidth = 5;
+ctx.strokeStyle = "rgba(255,255,255,0.70)";
+ctx.beginPath();
+ctx.arc(b.x, b.y, b.r + 14, -Math.PI / 2, -Math.PI / 2 + t * Math.PI * 2);
+ctx.stroke();
+
+ctx.restore();
+}
+
+
+function drawHeart(h) {
+ctx.save();
+ctx.translate(h.x, h.y);
+
+const s = 1 + Math.sin(h.pulse)*0.10;
+ctx.scale(s, s);
+
+ctx.beginPath();
+ctx.moveTo(0, 6);
+ctx.bezierCurveTo(-13, -5, -9, -18, 0, -10);
+ctx.bezierCurveTo( 9, -18, 13, -5, 0, 6);
+ctx.closePath();
+
+ctx.fillStyle = "rgba(255, 90, 140, 0.92)";
+ctx.shadowColor = "rgba(255, 90, 140, 0.70)";
+ctx.shadowBlur = 18;
+ctx.fill();
+
+ctx.shadowBlur = 0;
+ctx.globalAlpha = 0.35;
+ctx.fillStyle = "rgba(255,255,255,1)";
+ctx.beginPath();
+ctx.ellipse(-4, -6, 3.2, 4.6, -0.35, 0, Math.PI*2);
+ctx.fill();
+
+ctx.restore();
+}
+// =========================
+// END NEW SYSTEMS
+// =========================
+
+// Minimal dust
+const dust = Array.from({length: 70}, () => ({
+x: rand(0, W()), y: rand(0, H()),
+s: rand(0.8, 2.2),
+a: rand(0.18, 0.55),
+v: rand(6, 22),
+}));
+
+function reset() {
+running = false;
+gameOver = false;
+
+score = 0;
+level = 1;
+lives = 3;
+
+player.x = W()/2; player.y = H()*0.75;
+player.dashCooldown = 0;
+player.invuln = 0;
+player.flame = 0;
+
+shakeT = 0;
+levelFlashT = 0;
+hudPulseT = 0;
+
+stars.length = 0; enemies.length = 0; particles.length = 0;
+bullets.length = 0;
+
+// NEW: reset boss/hearts
+boss = null;
+bossActive = false;
+pendingLevel = 1;
+bossShots.length = 0;
+
+hearts.length = 0;
+heartTimer = rand(14, 26);
+
+spawnStar();
+for (let i=0;i<3;i++) spawnEnemy();
+
+updateUI();
+}
+
+function hardRestart() {
+reset();
+showOverlay("Captain Luke’s Space Odyssey",
+"Collect <b>⭐</b> energy • Avoid <b>☄</b> hazards.<br/><br/>Move: <b>WASD</b>/<b>Arrows</b> • Boost: <b>Space</b> • Shoot: <b>Shift</b> • Pause: <b>P</b>",
+"Start Mission",
+"How to Play"
+);
+}
+
+function updateUI() {
+scorePill.textContent = `🏆 Score: ${score}`;
+levelPill.textContent = `🎮 Level: ${level}`;
+livesPill.textContent = `❤️ Lives: ${lives}`;
+bestPill.textContent = `🔥 Best: ${best}`;
+
+if (lives === 1 && running && !gameOver) {
+if (heartbeatMusic.paused) heartbeatMusic.play().catch(()=>{});
+} else {
+heartbeatMusic.pause();
+heartbeatMusic.currentTime = 0;
+}
+}
+
+function showOverlay(title, html, primaryText="Resume", secondaryText=null) {
+overlayTitle.textContent = title;
+overlayText.innerHTML = html;
+overlayPrimary.textContent = primaryText;
+
+if (secondaryText) {
+overlaySecondary.style.display = "inline-block";
+overlaySecondary.textContent = secondaryText;
+} else {
+overlaySecondary.style.display = "none";
+}
+
+overlay.style.display = 'grid';
+}
+function hideOverlay() {
+overlay.style.display = 'none';
+}
+
+function startGame() {
+  console.log("START GAME CLICKED");
+
+  heartbeatMusic.pause();
+  heartbeatMusic.currentTime = 0;
+  gameOverMusic.pause();
+  bossMusic.pause();
+
+  normalMusic.currentTime = 0;
+  normalMusic.play().catch(()=>{});
+
+  // 🔓 Prime Guetta boss track (browser audio unlock)
+  guettaBossTrack.volume = 0;
+  guettaBossTrack.play().then(() => {
+    guettaBossTrack.pause();
+    guettaBossTrack.currentTime = 0;
+    guettaBossTrack.volume = 0.85;
+  }).catch(()=>{});
+
+// 🔓 Prime Saul intro track
+saulIntroTrack.volume = 0;
+saulIntroTrack.play().then(() => {
+  saulIntroTrack.pause();
+  saulIntroTrack.currentTime = 0;
+  saulIntroTrack.volume = 0.9;
+}).catch(()=>{});
+
+  overlay.style.display = "none";
+  running = true;
+  gameOver = false;
+}
+
+
+function playGameOverMusic() {
+normalMusic.pause();
+bossMusic.pause();
+heartbeatMusic.pause();
+heartbeatMusic.currentTime = 0;
+
+gameOverMusic.currentTime = 0;
+gameOverMusic.play().catch(()=>{});
+}
+
+function togglePause() {
+  if (gameOver) return;
+
+  running = !running;
+
+  if (!running) {
+    // ⏸️ Paused
+    setMusicVolume(0.25); // lower music
+    showOverlay("Paused", "Press <b>P</b> to resume.", "Resume", "Restart");
+  } else {
+    // ▶️ Resumed
+    setMusicVolume(0.85); // restore music
+    hideOverlay();
+  }
+}
+
+pauseBtn.onclick = togglePause;
+restartBtn.onclick = hardRestart;
+
+overlayPrimary.onclick = () => {
+if (gameOver) { hardRestart(); return; }
+if (!running) startGame();
+else { running = true; hideOverlay(); }
+};
+overlaySecondary.onclick = () => {
+if (overlaySecondary.textContent.toLowerCase().includes("how")) {
+showOverlay(
+"How to Play",
+"You are the ship.<br/><br/>• Collect <b>⭐</b> to score<br/>• Avoid <b>☄</b> hazards<br/>• <b>Space</b> = Boost (cooldown ring)<br/>• <b>Shift</b> = Shoot (mobile: double-tap <b>⚡</b>)<br/><br/>Tip: boost through tight gaps.",
+"Start Mission",
+"Back"
+);
+overlaySecondary.textContent = "Back";
+return;
+}
+hardRestart();
+};
+
+function spawnStar() {
+stars.push({
+x: rand(40, W()-40),
+y: rand(40, H()-40),
+r: 10,
+spin: rand(0, Math.PI*2),
+pulse: rand(0, Math.PI*2)
+});
+}
+
+function maxEnemiesForLevel(level) {
+  if (level < 3) return 3;
+  if (level < 6) return 4;
+  if (level < 9) return 5;
+  if (level < 12) return 6;
+  return Math.min(8, 3 + Math.floor(level / 2));
+}
+
+function spawnEnemy() {
+  enemies.push({
+    x: rand(30, W()-30),
+    y: rand(-320, -40),
+    r: rand(13, 18),
+    vy: rand(110, 160),
+    vx: rand(-55, 55),
+    wobble: rand(0, Math.PI*2),
+    heat: rand(0.65, 1.0),
+respawnDelay: 0 // ⬅️ NEW
+  });
+}
+
+function burst(x,y, n=12, c="rgba(255,255,255,0.9)") {
+for (let i=0;i<n;i++){
+const a = rand(0, Math.PI*2);
+const s = rand(60, 220);
+particles.push({
+x,y,
+vx: Math.cos(a)*s,
+vy: Math.sin(a)*s,
+life: rand(0.22, 0.55),
+c
+});
+}
+}
+
+function circleHit(a, b) {
+const dx = a.x - b.x, dy = a.y - b.y;
+const rr = (a.r + b.r);
+return dx*dx + dy*dy <= rr*rr;
+}
+
+let last = performance.now();
+function loop(now) {
+const dt = Math.min(0.033, (now - last) / 1000) * timeScale;
+last = now;
+
+if (running && !gameOver) update(dt);
+render(now, dt);
+
+requestAnimationFrame(loop);
+}
+
+function update(dt) {
+// Boss cinematic intro timing (Tron slow-mo)
+if (bossIntroTimer > 0) {
+bossIntroTimer -= dt;
+bossIntroPulse += dt * 3;
+bossIntroZoom = Math.max(1, bossIntroZoom - dt * 0.6);
+
+// Slide HUD up smoothly
+hudYOffset = Math.min(12, hudYOffset + dt * 40);
+topbar.style.transform = `translateY(${-hudYOffset}px)`;
+
+if (bossIntroTimer <= 0) {
+timeScale = 1;
+hudYOffset = 0;
+topbar.style.transform = "translateY(0px)";
+}
+}
+
+// Hearts spawn timer
+heartTimer -= dt;
+if (heartTimer <= 0 && lives < MAX_LIVES && hearts.length === 0) {
+spawnHeart();
+heartTimer = rand(14, 26);
+}
+
+// Boss defeat cinematic timing (slow-mo on death)
+if (bossDefeatTimer > 0) {
+bossDefeatTimer -= dt;
+if (bossDefeatTimer <= 0) timeScale = 1;
+}
+
+// Level scaling
+const newLevel = 1 + Math.floor(score / 10);
+
+// Boss only every 3 levels, otherwise normal level-up
+if (!bossActive && newLevel !== level) {
+if (newLevel % BOSS_EVERY === 0) {
+spawnBoss(newLevel);
+} else {
+level = newLevel;
+levelFlashT = 0.28;
+hudPulseT = 0.18;
+if (enemies.length < maxEnemiesForLevel(level)) {
+  spawnEnemy();
+}
+}
+updateUI();
+}
+
+// Movement input
+let ix = 0, iy = 0;
+if (keys.has('arrowleft') || keys.has('a')) ix -= 1;
+if (keys.has('arrowright') || keys.has('d')) ix += 1;
+if (keys.has('arrowup') || keys.has('w')) iy -= 1;
+if (keys.has('arrowdown') || keys.has('s')) iy += 1;
+
+ix += touchDir.x; iy += touchDir.y;
+ix = clamp(ix, -1, 1); iy = clamp(iy, -1, 1);
+
+const mag = Math.hypot(ix, iy) || 1;
+const nx = ix / mag, ny = iy / mag;
+
+const wantDash = dashPressed || keys.has(' ');
+let speed = player.speed;
+
+if (player.dashCooldown > 0) player.dashCooldown -= dt;
+if (player.invuln > 0) player.invuln -= dt;
+if (shakeT > 0) shakeT -= dt;
+if (levelFlashT > 0) levelFlashT -= dt;
+if (hudPulseT > 0) hudPulseT -= dt;
+
+if (wantDash && player.dashCooldown <= 0 && (ix || iy)) {
+speed = player.dashSpeed;
+player.dashCooldown = 0.9;
+player.invuln = Math.max(player.invuln, 0.16);
+player.flame = 1.0;
+burst(player.x, player.y, 10, C_CYAN_G);
+}
+
+player.flame = Math.max(0, player.flame - dt * 2.4);
+
+player.x += nx * speed * dt;
+player.y += ny * speed * dt;
+
+player.x = clamp(player.x, player.r, W() - player.r);
+player.y = clamp(player.y, player.r, H() - player.r);
+
+// Dust
+for (const d of dust) {
+d.y += d.v * dt;
+if (d.y > H() + 10) { d.y = -10; d.x = rand(0, W()); }
+}
+
+// Stars animate
+for (const s of stars) { s.spin += dt * 3; s.pulse += dt * 2.2; }
+
+// Enemies update
+for (const e of enemies) {
+if (e.respawnDelay > 0) {
+  e.respawnDelay -= dt;
+  continue; // skip movement until ready
+}
+// ♻️ Respawn after delay (bring enemy back)
+  if (e.y < -900 && e.respawnDelay <= 0) {
+    e.y = rand(-280, -40);
+    e.x = rand(30, W() - 30);
+    e.vy = rand(110, 160) + Math.min(level * 10, 80);
+    e.heat = rand(0.65, 1.0);
+  }
+
+e.wobble += dt * 2.0;
+e.y += e.vy * dt;
+e.x += (e.vx + Math.sin(e.wobble) * 36) * dt;
+
+if (e.x < e.r) { e.x = e.r; e.vx *= -1; }
+if (e.x > W() - e.r) { e.x = W() - e.r; e.vx *= -1; }
+
+if (e.y > H() + 90) {
+  e.respawnDelay = rand(0.3, 0.8); // ⏱ pause before return
+  e.y = -999; // park offscreen
+}
+}
+
+// Boss motion + firing (boss-specific behaviour)
+if (bossActive && boss && currentBossData) {
+  // Vertical settle-in
+  boss.y += boss.vy * dt;
+  if (boss.y > 120) boss.y = 120;
+
+  // Boss-defined movement & attacks
+  currentBossData.move(dt, boss);
+  currentBossData.fire(dt, boss);
+
+// 🔥 Enrage state (auto-updating)
+  boss.enrage = boss.hp < boss.hpMax * 0.4;
+
+  // Boss-defined attacks (can read boss.enrage)
+  currentBossData.fire(dt, boss);
+
+}
+
+// Particles update
+for (let i = particles.length - 1; i >= 0; i--) {
+const p = particles[i];
+p.life -= dt;
+p.x += p.vx * dt;
+p.y += p.vy * dt;
+p.vx *= Math.pow(0.05, dt);
+p.vy *= Math.pow(0.05, dt);
+if (p.life <= 0) particles.splice(i, 1);
+}
+
+// Boss shots update + collision
+for (let i = bossShots.length - 1; i >= 0; i--) {
+const s = bossShots[i];
+s.y += s.vy * dt;
+
+if (s.y > H() + 20) {
+bossShots.splice(i, 1);
+continue;
+}
+
+// 🕳️ Void Monarch gravity pull (balanced & escapable)
+if (
+  bossActive &&
+  currentBossData?.id === 3 &&
+  s.gravity
+) {
+  const dx = s.x - player.x;
+  const adx = Math.abs(dx);
+
+  // Only pull if fairly close to the bullet
+  if (adx < 120) {
+  const strength = 1 - adx / 120;
+  const pull = clamp(strength * 12, 0, 12);
+  player.x += Math.sign(dx) * pull * dt;
+}
+
+}
+
+
+if (player.invuln <= 0 && circleHit(player, s)) {
+bossShots.splice(i, 1);
+lives -= 1;
+player.invuln = 1.0;
+shakeT = 0.22;
+burst(player.x, player.y, 22, C_MAG_G);
+updateUI();
+
+if (lives <= 0) {
+  gameOver = true;
+  running = false;
+
+  if (score > best) {
+    best = score;
+    localStorage.setItem(bestKey, String(best));
+  }
+
+  updateUI();
+
+  // 🔇 Stop ALL boss-related music
+
+  guettaBossTrack.pause();
+  guettaBossTrack.currentTime = 0;
+
+  saulIntroTrack.pause();
+  saulIntroTrack.currentTime = 0;
+
+  bossMusic.pause();
+  bossMusic.currentTime = 0;
+
+  playGameOverMusic();
+  showGameOverOverlay();
+}
+
+}
+}
+
+// Bullets update + collisions
+for (let i = bullets.length - 1; i >= 0; i--) {
+const b = bullets[i];
+b.y += b.vy * dt;
+b.life -= dt;
+
+if (b.life <= 0 || b.y < -20) {
+bullets.splice(i, 1);
+continue;
+}
+
+// Bullet vs Boss
+if (bossActive && boss && circleHit(b, boss)) {
+bullets.splice(i, 1);
+boss.hp -= 1;
+burst(boss.x, boss.y, 14, C_MAG_G);
+hudPulseT = 0.12;
+
+if (boss.hp <= 0) {
+// slow-mo moment
+bossDefeatTimer = 1.6;
+timeScale = 0.35;
+
+bossMusic.pause();
+bossMusic.currentTime = 0;
+guettaBossTrack.pause();
+guettaBossTrack.currentTime = 0;
+saulIntroTrack.pause();
+  saulIntroTrack.currentTime = 0;
+normalMusic.play().catch(()=>{});
+
+bossActive = false;
+boss = null;
+bossShots.length = 0;
+
+level = pendingLevel;
+levelFlashT = 0.28;
+hudPulseT = 0.18;
+if (enemies.length < maxEnemiesForLevel(level)) {
+  spawnEnemy();
+}
+
+score += 5;
+updateUI();
+burst(W() / 2, 120, 24, "rgba(255,255,255,0.85)");
+}
+continue;
+}
+
+// Bullet vs Enemies
+for (const e of enemies) {
+if (circleHit(b, e)) {
+bullets.splice(i, 1);
+burst(e.x, e.y, 16, C_MAG_G);
+score += 2;
+updateUI();
+
+e.y = rand(-280, -40);
+e.x = rand(30, W() - 30);
+e.vy = rand(120, 190) + level * 18;
+e.vx = rand(-55, 55);
+e.wobble = rand(0, Math.PI * 2);
+e.heat = rand(0.65, 1.0);
+break;
+}
+}
+}
+
+// Collect star
+for (let i = stars.length - 1; i >= 0; i--) {
+const s = stars[i];
+if (circleHit(player, s)) {
+stars.splice(i, 1);
+score += 1;
+burst(s.x, s.y, 14, "rgba(255,235,160,0.85)");
+spawnStar();
+updateUI();
+}
+}
+
+// Collect hearts
+for (let i = hearts.length - 1; i >= 0; i--) {
+const h = hearts[i];
+h.pulse += dt * 3.2;
+if (circleHit(player, h)) {
+hearts.splice(i, 1);
+lives += 1;
+burst(h.x, h.y, 18, "rgba(255,90,140,0.85)");
+hudPulseT = 0.10;
+updateUI();
+}
+}
+
+// Player vs Boss collision
+if (bossActive && boss && player.invuln <= 0 && circleHit(player, boss)) {
+lives -= 1;
+player.invuln = 1.0;
+shakeT = 0.22;
+burst(player.x, player.y, 24, C_MAG_G);
+updateUI();
+
+if (lives <= 0) {
+gameOver = true;
+running = false;
+if (score > best) {
+best = score;
+localStorage.setItem(bestKey, String(best));
+}
+updateUI();
+playGameOverMusic();
+  showGameOverOverlay();
+}
+}
+
+// Player vs Enemy collision
+if (player.invuln <= 0 && !gameOver) {
+for (const e of enemies) {
+if (circleHit(player, e)) {
+lives -= 1;
+player.invuln = 1.0;
+shakeT = 0.22;
+burst(player.x, player.y, 22, C_MAG_G);
+updateUI();
+
+if (lives <= 0) {
+gameOver = true;
+running = false;
+if (score > best) {
+best = score;
+localStorage.setItem(bestKey, String(best));
+}
+updateUI();
+playGameOverMusic();
+showGameOverOverlay();
+}
+break;
+}
+}
+}
+}
+// ----- DRAWING -----
+
+function drawBackground(now) {
+ctx.save();
+const grad = ctx.createRadialGradient(W()*0.5, H()*0.45, 120, W()*0.5, H()*0.5, W()*0.9);
+grad.addColorStop(0, "rgba(20,28,55,0.10)");
+grad.addColorStop(1, "rgba(0,0,0,0.32)");
+ctx.fillStyle = grad;
+ctx.fillRect(0,0,W(),H());
+
+for (const d of dust) {
+ctx.globalAlpha = d.a;
+ctx.fillStyle = "rgba(255,255,255,0.8)";
+ctx.fillRect(d.x, d.y, d.s, d.s);
+}
+ctx.globalAlpha = 1;
+
+ctx.globalAlpha = 0.06;
+ctx.fillStyle = "rgba(255,255,255,1)";
+for (let y=0; y<H(); y+=3) ctx.fillRect(0, y, W(), 1);
+ctx.globalAlpha = 1;
+
+ctx.globalAlpha = 0.08;
+ctx.strokeStyle = "rgba(120,210,255,0.35)";
+ctx.lineWidth = 1;
+for (let x=0; x<=W(); x+=120) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H()); ctx.stroke(); }
+for (let y=0; y<=H(); y+=120) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W(),y); ctx.stroke(); }
+ctx.globalAlpha = 1;
+
+if (hudPulseT > 0) {
+ctx.globalAlpha = hudPulseT / 0.18 * 0.10;
+ctx.fillStyle = "rgba(255,95,200,1)";
+ctx.fillRect(0,0,W(),H());
+ctx.globalAlpha = 1;
+}
+
+ctx.restore();
+}
+
+function drawStar(x,y,r,spin,pulse) {
+ctx.save();
+ctx.translate(x,y);
+ctx.rotate(spin);
+
+const breathe = 1 + Math.sin(pulse)*0.06;
+
+ctx.beginPath();
+const spikes = 5;
+const outer = r*breathe, inner = r*0.48;
+for (let i=0;i<spikes*2;i++){
+const a = (i * Math.PI) / spikes;
+const rr = (i%2===0) ? outer : inner;
+ctx.lineTo(Math.cos(a)*rr, Math.sin(a)*rr);
+}
+ctx.closePath();
+
+ctx.fillStyle = C_STAR;
+ctx.shadowColor = "rgba(255,235,160,0.55)";
+ctx.shadowBlur = 18;
+ctx.fill();
+
+ctx.restore();
+}
+
+function drawHazard(e) {
+const tail = clamp((e.vy - 120) / 200, 0, 1);
+
+ctx.save();
+ctx.globalAlpha = 0.75;
+const tailLen = 26 + tail*34;
+const tailW = e.r * 1.35;
+
+const g = ctx.createLinearGradient(e.x, e.y-e.r, e.x, e.y + tailLen);
+g.addColorStop(0, `rgba(255,95,200,${0.22*e.heat})`);
+g.addColorStop(1, `rgba(255,95,200,0)`);
+ctx.fillStyle = g;
+
+ctx.beginPath();
+ctx.moveTo(e.x - tailW*0.55, e.y + e.r*0.25);
+ctx.lineTo(e.x + tailW*0.55, e.y + e.r*0.25);
+ctx.lineTo(e.x, e.y + tailLen);
+ctx.closePath();
+ctx.fill();
+ctx.restore();
+
+ctx.save();
+ctx.beginPath();
+ctx.arc(e.x, e.y, e.r+6, 0, Math.PI*2);
+ctx.strokeStyle = `rgba(255,95,200,${0.20*e.heat})`;
+ctx.lineWidth = 3;
+ctx.shadowColor = `rgba(255,95,200,${0.55*e.heat})`;
+ctx.shadowBlur = 20;
+ctx.stroke();
+ctx.restore();
+
+ctx.save();
+ctx.beginPath();
+ctx.arc(e.x, e.y, e.r, 0, Math.PI*2);
+ctx.fillStyle = "rgba(40,18,30,0.95)";
+ctx.fill();
+
+ctx.beginPath();
+ctx.arc(e.x, e.y, e.r, 0, Math.PI*2);
+ctx.strokeStyle = `rgba(255,95,200,${0.55*e.heat})`;
+ctx.lineWidth = 2;
+ctx.shadowColor = `rgba(255,95,200,${0.85*e.heat})`;
+ctx.shadowBlur = 26;
+ctx.stroke();
+ctx.restore();
+}
+
+function drawShip(now) {
+const inv = player.invuln > 0 ? (Math.floor(now/90) % 2 ? 0.35 : 1) : 1;
+
+const moving = (keys.has('a')||keys.has('d')||keys.has('w')||keys.has('s')||
+keys.has('arrowleft')||keys.has('arrowright')||keys.has('arrowup')||keys.has('arrowdown')||
+touchDir.x||touchDir.y) ? 1 : 0;
+
+const flame = (0.20 + moving*0.25 + player.flame*0.65);
+const flameLen = 10 + flame*18 + Math.sin(now/70)*2;
+
+ctx.save();
+ctx.globalAlpha = inv;
+ctx.translate(player.x, player.y);
+
+ctx.beginPath();
+ctx.ellipse(0, 0, player.r+10, player.r+12, 0, 0, Math.PI*2);
+ctx.fillStyle = "rgba(120,210,255,0.10)";
+ctx.fill();
+
+if (player.flame > 0.1) {
+const g = ctx.createLinearGradient(0, player.r*0.7, 0, player.r + flameLen);
+g.addColorStop(0, "rgba(120,210,255,0.55)");
+g.addColorStop(1, "rgba(120,210,255,0)");
+ctx.fillStyle = g;
+ctx.beginPath();
+ctx.moveTo(-7, player.r*0.6);
+ctx.lineTo( 7, player.r*0.6);
+ctx.lineTo( 0, player.r + flameLen);
+ctx.closePath();
+ctx.fill();
+}
+
+ctx.beginPath();
+ctx.moveTo(0, -20);
+ctx.bezierCurveTo(12, -16, 14, 6, 0, 18);
+ctx.bezierCurveTo(-14, 6, -12, -16, 0, -20);
+ctx.closePath();
+
+ctx.fillStyle = C_CYAN;
+ctx.shadowColor = C_CYAN_G;
+ctx.shadowBlur = 22;
+ctx.fill();
+
+ctx.beginPath();
+ctx.ellipse(0, -6, 4.2, 6.2, 0, 0, Math.PI*2);
+ctx.fillStyle = "rgba(235, 252, 255, 0.92)";
+ctx.shadowColor = "rgba(235, 252, 255, 0.35)";
+ctx.shadowBlur = 10;
+ctx.fill();
+
+ctx.shadowBlur = 0;
+ctx.lineWidth = 2;
+ctx.strokeStyle = "rgba(255,95,200,0.65)";
+ctx.beginPath();
+ctx.moveTo(0, -14);
+ctx.quadraticCurveTo(6, 0, 0, 14);
+ctx.stroke();
+
+const t = clamp(player.dashCooldown / 0.9, 0, 1);
+ctx.lineWidth = 4;
+ctx.strokeStyle = "rgba(255,255,255,0.62)";
+ctx.beginPath();
+ctx.arc(0, 0, player.r + 12, -Math.PI/2, -Math.PI/2 + (1-t)*Math.PI*2);
+ctx.stroke();
+
+ctx.restore();
+}
+
+function render(now, dt) {
+ctx.clearRect(0,0,W(),H());
+
+if (shakeT > 0) {
+const s = (shakeT / 0.22);
+ctx.save();
+ctx.translate(rand(-10,10)*s, rand(-10,10)*s);
+}
+
+drawBackground(now);
+
+// Boss defeat white flash
+if (bossFlashT > 0) {
+ctx.save();
+ctx.globalAlpha = bossFlashT / 0.12;
+ctx.fillStyle = "white";
+ctx.fillRect(0, 0, W(), H());
+ctx.restore();
+}
+
+// Boss defeat shockwave ring
+if (bossShockwaveT > 0) {
+const t = 1 - bossShockwaveT / 0.8;
+const r = 40 + t * 420;
+
+ctx.save();
+ctx.beginPath();
+ctx.arc(W()/2, 120, r, 0, Math.PI * 2);
+ctx.strokeStyle = `rgba(180,60,255,${1 - t})`;
+ctx.lineWidth = 6;
+ctx.shadowColor = "rgba(200,100,255,0.9)";
+ctx.shadowBlur = 40;
+ctx.stroke();
+ctx.restore();
+}
+
+
+for (const p of particles) {
+ctx.save();
+ctx.globalAlpha = Math.max(0, p.life) / 0.55;
+ctx.beginPath();
+ctx.arc(p.x, p.y, 2.2, 0, Math.PI*2);
+ctx.fillStyle = p.c || "rgba(255,255,255,0.9)";
+ctx.fill();
+ctx.restore();
+}
+
+for (const b of bullets) {
+ctx.save();
+ctx.beginPath();
+ctx.arc(b.x, b.y, b.r, 0, Math.PI*2);
+ctx.fillStyle = C_CYAN;
+ctx.shadowColor = C_CYAN_G;
+ctx.shadowBlur = 12;
+ctx.fill();
+ctx.restore();
+}
+
+for (const s of stars) drawStar(s.x, s.y, s.r, s.spin, s.pulse);
+
+for (const e of enemies) drawHazard(e);
+
+// Boss shots (boss fights back)
+for (const s of bossShots) {
+  ctx.save();
+
+  ctx.shadowColor = s.color || C_MAG_G;
+  ctx.shadowBlur = 12; // softer, cleaner glow
+
+  ctx.beginPath();
+  ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+  ctx.fillStyle = s.color || C_MAG;
+  ctx.fill();
+
+  ctx.restore();
+}
+
+if (bossActive && boss) drawBoss(boss);
+
+for (const h of hearts) drawHeart(h);
+
+drawShip(now);
+
+if (levelFlashT > 0) {
+ctx.save();
+const a = (levelFlashT / 0.28) * 0.22;
+ctx.fillStyle = `rgba(255,255,255,${a})`;
+ctx.fillRect(0,0,W(),H());
+ctx.restore();
+}
+
+if (shakeT > 0) ctx.restore();
+
+if (score === 0 && !gameOver && !running) {
+ctx.save();
+ctx.fillStyle = "rgba(255,255,255,0.82)";
+ctx.font = "750 18px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+ctx.textAlign = "center";
+ctx.fillText("Press Start Mission • Boost with Space • Shoot with Shift.", W()/2, 46);
+ctx.restore();
+}
+// Boss cinematic title (Tron style)
+if (bossIntroTimer > 0 && currentBossData) {
+const cx = W() / 2;
+const cy = H() * 0.42; // slightly above centre
+
+const alpha = Math.min(1, (1.4 - bossIntroTimer) * 1.5);
+const glowPulse = (Math.sin(bossIntroPulse * Math.PI) * 0.5 + 0.5);
+
+ctx.save();
+ctx.translate(cx, cy);
+ctx.scale(bossIntroZoom, bossIntroZoom);
+ctx.textAlign = "center";
+ctx.textBaseline = "middle";
+
+// Glow colours alternate cyan ↔ magenta
+const glowColor = glowPulse > 0.5 ? C_CYAN_G : C_MAG_G;
+
+// Main boss name
+ctx.font = "900 64px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+ctx.shadowColor = glowColor;
+ctx.shadowBlur = 28;
+ctx.fillText(currentBossData.name, 0, 0);
+
+// Subtitle
+ctx.font = "700 22px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+ctx.shadowBlur = 18;
+ctx.fillText(currentBossData.title, 0, 56);
+
+// Intro line
+ctx.font = "500 14px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+ctx.shadowBlur = 8;
+ctx.fillText(currentBossData.intro, 0, 92);
+
+ctx.restore();
+}
+
+// Tron boss intro pulse overlay (cyan ↔ magenta)
+if (bossIntroTimer > 0) {
+const t = bossIntroPulse;
+const pulse = (Math.sin(t * Math.PI) * 0.5 + 0.5); // 0..1
+
+const r = Math.floor(255 * pulse);
+const g = Math.floor(80 + 175 * (1 - pulse));
+const b = Math.floor(255 * (1 - pulse));
+
+ctx.save();
+ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 0.08)`;
+ctx.fillRect(0, 0, W(), H());
+ctx.restore();
+}
+
+// Boss defeat quote (epic line)
+if (bossDefeatTextT > 0 && currentBossData) {
+const a = Math.min(1, bossDefeatTextT / 0.6); // fade in
+const y = H() * 0.42;
+
+ctx.save();
+ctx.textAlign = "center";
+ctx.textBaseline = "middle";
+ctx.font = "800 28px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+ctx.fillStyle = `rgba(255,255,255,${a})`;
+ctx.shadowColor = "rgba(180,80,255,1)";
+ctx.shadowBlur = 26;
+ctx.fillText(currentBossData.defeat, W()/2, y);
+ctx.restore();
+}
+}
+
+// Boot
+bestPill.textContent = `Best: ${best}`;
+reset();
+showOverlay(
+"Captain Luke’s Space Odyssey",
+"Navigate the HUD void.<br/>Collect <b>⭐</b> energy • Avoid <b>☄</b> hazards.<br/><br/>Move: <b>WASD</b>/<b>Arrows</b> • Boost: <b>Space</b> • Shoot: <b>Shift</b> • Pause: <b>P</b><br/><small>(Mobile: double-tap ⚡ to shoot)</small>",
+"Start Mission",
+"How to Play"
+);
+
+requestAnimationFrame(loop);
 </script>
-</body>
-</html>
