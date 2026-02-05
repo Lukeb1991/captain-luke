@@ -256,21 +256,27 @@ ringColor: "rgba(255, 200, 40, 0.85)", // legal yellow
 
 
 move(dt, boss) {
-// ⬇️ Creeping entry
-if (boss.entryT < 1) {
-boss.entryT = Math.min(boss.entryT + dt * 0.35, 1);
+  // ⬇️ Creeping entry
+  if (boss.entryT < 1) {
+    boss.entryT = Math.min(boss.entryT + dt * 0.35, 1);
 
-// Smooth ease-in
-const ease = boss.entryT * boss.entryT * (3 - 2 * boss.entryT);
-boss.y = -120 + ease * 230; // settles around y ≈ 110
-return; // no movement yet
-}
+    const ease = boss.entryT * boss.entryT * (3 - 2 * boss.entryT);
+    boss.y = -120 + ease * 230;
 
-// Normal Saul motion
-boss.angle += dt;
-boss.x = W() / 2 + Math.cos(boss.angle) * 180;
-boss.y = 110 + Math.sin(boss.angle * 2) * 40;
+    // 🔒 Lock position during intro
+    boss.x = W() / 2;
+    boss.angle = -Math.PI / 2; // start from centre-left curve
+
+    return;
+  }
+
+  // 🎯 Smooth post-entry motion (no snap)
+  boss.angle += dt * 0.6; // slower initial angular speed
+  const radius = 180 * Math.min(1, boss.entryT + dt);
+  boss.x = W() / 2 + Math.cos(boss.angle) * radius;
+  boss.y = 110 + Math.sin(boss.angle * 2) * 40;
 },
+
 
 
 fire(dt, boss) {
@@ -1187,21 +1193,13 @@ best = score;
 localStorage.setItem(bestKey, String(best));
 }
 
-updateUI();
+  updateUI();
 
-// 🔇 Stop ALL boss-related music
+  // 🔇 HARD STOP – includes Saul intro
+  stopAllMusic();
 
-guettaBossTrack.pause();
-guettaBossTrack.currentTime = 0;
-
-saulIntroTrack.pause();
-saulIntroTrack.currentTime = 0;
-
-bossMusic.pause();
-bossMusic.currentTime = 0;
-
-playGameOverMusic();
-showGameOverOverlay();
+  playGameOverMusic();
+  showGameOverOverlay();
 }
 
 }
